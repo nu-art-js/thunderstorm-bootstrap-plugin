@@ -1,0 +1,19 @@
+{
+  "name": "thunderstorm-bootstrap",
+  "displayName": "Thunderstorm Bootstrap",
+  "description": "Scaffold a new Thunderstorm monorepo project from scratch. Generates the full BAI workspace: root config, app packages, library packages, and all boilerplate — ready to build.",
+  "version": "1.0.0",
+  "author": {
+    "name": "TacB0sS"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "thunderstorm",
+    "monorepo",
+    "bai",
+    "scaffold",
+    "bootstrap",
+    "typescript",
+    "firebase"
+  ]
+}
