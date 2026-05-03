@@ -1,425 +1,132 @@
 ---
 name: bootstrap-thunderstorm-project
 description: >-
-  Scaffold a new Thunderstorm monorepo project from an empty directory.
-  Use when creating a new standalone Thunderstorm project, initializing a BAI workspace,
-  or when the user says "new thunderstorm project", "bootstrap project", or "create TS project from scratch".
+  Scaffold a new Thunderstorm monorepo by cloning the official sample boilerplate,
+  then renaming, re-pointing git, adjusting ports and Firebase project IDs, and
+  optionally adding capability packages. Use for "new thunderstorm project",
+  "bootstrap BAI monorepo", or "clone thunderstorm template".
 ---
 
-# Bootstrap Thunderstorm Project
+# Bootstrap Thunderstorm Project (clone-based)
 
-Workflow for creating a new Thunderstorm (BAI) monorepo project from scratch.
-Based on Thunderstorm 0.500.x conventions.
+Do **not** hand-author the full monorepo from scratch. Start from the maintained boilerplate, then customize.
 
-## Step 1 — Collect project parameters
+**Source of truth:** `git@github.com:nu-art-js/thunderstorm-sample.git` (Thunderstorm 0.500.x, Vite + Webpack frontends, sample `core/` library, BAI, `_thunderstorm` submodule).
 
-Use AskQuestion to gather the following. Provide sensible defaults where shown.
+After clone, read `_thunderstorm/.rules/operational/bai-cli.mdc` and `_thunderstorm/.rules/operational/project-structure.mdc` before running BAI.
 
-| Parameter | Example | Default |
-|-----------|---------|---------|
-| `projectName` | `my-cool-app` | *(required)* |
-| `npmScope` | `@app` | `@app` |
-| `gitRepoUrl` | `git@github.com:my-org/my-cool-app.git` | *(required)* |
-| `nodeVersion` | `22.10.0` | `22.10.0` |
-| `thunderstormRepo` | `git@github.com:nu-art-js/thunderstorm.git` | `git@github.com:nu-art-js/thunderstorm.git` |
-| `thunderstormVersion` | `0.500.0` | latest tag on thunderstorm repo |
-| `frontendType` | `vite` or `webpack` | `vite` |
-| `license` | `Apache-2.0` | `Apache-2.0` |
-| `author` | `My Org` | *(required)* |
-| `firebaseProjectIds` | `{ local: "my-app-local", dev: "my-app-dev" }` | *(required — at least `local`)* |
-| `initialPackages` | `["messaging/shared", "messaging/backend", "messaging/frontend"]` | `[]` |
-| `port` | `8200` | `8000` |
+## Step 1 — Collect parameters
 
-Port derivation from `port` (N):
+| Parameter | Notes |
+|-----------|--------|
+| `projectName` | Directory name and human label |
+| `npmScope` | e.g. `@app` — must match how you name workspace packages |
+| `gitRepoUrl` | New repo URL (`git@github.com:org/repo.git`) |
+| `templateRepoUrl` | Default: `git@github.com:nu-art-js/thunderstorm-sample.git` |
+| `thunderstormCheckout` | Optional: tag or branch for `_thunderstorm` after clone (default: keep template’s submodule pointer) |
+| `author`, `license` | For `__package.json` / package metadata where applicable |
+| `firebaseProjectIds` | At least `local`; add `dev` / `staging` / `prod` if needed |
+| `port` | Integer **N** — base for local ports (see [reference.md](reference.md)) |
+| `frontendType` | `vite` or `webpack` — **delete the other** `app/frontend*` tree after clone |
+| `initialPackages` | e.g. `["messaging/shared","messaging/backend","messaging/frontend"]` — new capability folders |
+| `removeSampleCore` | If true: delete `core/` and strip `@app/core-*` deps and imports (search `@app/core-`) |
 
-| Derived | Value | Used in |
-|---------|-------|---------|
-| `debugPort` | N | backend `unitConfig.debugPort` |
-| `servingPort` | N + 1 | frontend `unitConfig.servingPort` |
-| `basePort` | N + 2 | backend `unitConfig.basePort` |
-| `configUrlPort` | N + 4 | frontend `envs.local.config.configUrl` |
-
-## Step 2 — Initialize the repository
+## Step 2 — Clone
 
 ```bash
-mkdir <projectName> && cd <projectName>
-git init
-git submodule add <thunderstormRepo> _thunderstorm
-cd _thunderstorm && git checkout <thunderstormVersion-tag-or-branch> && cd ..
+git clone <templateRepoUrl> <projectName>
+cd <projectName>
 ```
 
-## Step 3 — Create root files
+Optional: `cd _thunderstorm && git fetch && git checkout <thunderstormCheckout> && cd ..` then commit submodule pointer if you changed it.
 
-### `.nvmrc`
-
-```
-<nodeVersion>
-```
-
-### `build-and-install.sh`
+## Step 3 — Point git at the new remote
 
 ```bash
-#!/bin/bash
-
-bash <(curl -fsSL https://github.com/nu-art/bash-tools/releases/latest/download/bundle.loader.sh) --sh-repo nu-art-js/build-and-install-script --sh-bundle bai "$@"
+git remote set-url origin <gitRepoUrl>
 ```
 
-Make executable: `chmod +x build-and-install.sh`
+Keep history from the sample, or `rm -rf .git && git init` if you want a clean history (then add remote and initial commit).
 
-### `version-app.json`
+## Step 4 — Choose frontend; delete the other
 
-```json
-{
-  "version": "1.0.0"
-}
-```
+| `frontendType` | Keep | Remove |
+|----------------|------|--------|
+| `vite` | `app/frontend-vite/` | `app/frontend/` (webpack) |
+| `webpack` | `app/frontend/` | `app/frontend-vite/` |
 
-### Root `__package.json`
+Delete the entire unused tree (including `__package.json`). Do not leave orphan packages in workspace.
 
-See [reference.md](reference.md) for the full template. Key points:
+## Step 5 — Rename workspace root package
 
-- `"name"` — `"<npmScope>/<projectName>"` (e.g. `"@app/my-cool-app"`)
-- `"version": "1.0.0"`, `"private": true`, `"type": "module"`
-- `"engines.node"` — major version matching `.nvmrc` (e.g. `"22"`)
-- `"unitConfig": { "type": "node-project" }`
-- `"pnpm.overrides"` — include `"google-auth-library"` and `"@bcherny/json-schema-ref-parser"` overrides
-- All thunderstorm/infra deps use `"?"` — BAI resolves from `bai-config.json`
+In root `__package.json`:
 
-### `bai-config.json`
+- Set `"name"` from `@app/sample-project` to `<npmScope>/<projectName>` (or `<npmScope>/<slug>` if npm name must differ from folder).
 
-See [reference.md](reference.md) for the full template. Key sections:
+Regenerate workspace metadata with BAI after edits (see Step 9).
 
-- `templateParams.packageJson` — all external dependency versions, plus:
-  - `"THUNDERSTORM_VERSION": "<thunderstormVersion>"`
-  - `"APP_VERSION": "1.0.0"`
-- `files.firebase` — paths to `.config/.firebase-config/` files
-- `files.typescript.tsConfig` — `main` and `test` point to `.config/tsconfig-main.json`
-- `files.backend.proxy` — `null` (no proxy needed by default)
-- `files.tests.firebase` — firebase test config paths (optional, add when tests are needed)
+## Step 6 — Firebase project IDs and RTDB config URL
 
-### `.config/tsconfig-main.json`
+In **remaining** app `__package.json` files (`app/backend/`, kept frontend):
 
-```json
-{
-  "compilerOptions": {
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "target": "ES2022",
-    "jsx": "react-jsx",
-    "allowJs": true,
-    "lib": ["ES2022", "DOM"],
-    "declaration": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "noUnusedLocals": true,
-    "strict": true
-  }
-}
-```
+- Replace placeholder `demo-project` / `real-project` with `firebaseProjectIds.local` (and other env keys if user provided them).
+- In `envs.*.config.configUrl`, the `ns=` query segment must match the Firebase RTDB namespace for that project (pattern used in template: `<projectId>-default-rtdb`). Update `ns=` when `projectId` changes.
 
-### `.config/eslint.config.cjs`
+Add `envs` entries for `dev` / `staging` / `prod` mirroring the pattern in a mature project (see e.g. news-scraper) if the user supplied those IDs.
 
-```javascript
-const typescriptEslint = require("@typescript-eslint/eslint-plugin");
-const tsParser = require("@typescript-eslint/parser");
+## Step 7 — Ports
 
-module.exports = [
-    {
-        files:['**/*.ts','**/*.tsx'],
-        plugins: {
-            "@typescript-eslint": typescriptEslint,
-        },
-        languageOptions: {
-            globals: {
-                Atomics: "readonly",
-                SharedArrayBuffer: "readonly",
-            },
-            parser: tsParser,
-            ecmaVersion: 2018,
-            sourceType: "module",
-        },
-        rules: {
-            "no-mixed-spaces-and-tabs": "off",
-            "no-unused-vars": "off",
-            "no-useless-escape": "off",
-            "no-inferrable-types": "off",
-            "no-unnecessary-type-constraint": "off",
-        },
-    },
-];
-```
+Template defaults (before customization) use **N = 8000**:
 
-### `.config/.firebase-config/` files
+| Role | Port |
+|------|------|
+| Backend `debugPort` | N |
+| Frontend `servingPort` (and webpack `devServerPort` if applicable) | N + 1 |
+| Backend `basePort` | N + 2 |
+| `configUrl` host port (`http://127.0.0.1:<port>/...`) | N + 4 |
 
-Create four files with minimal defaults. See [reference.md](reference.md) for contents:
+Replace **8000, 8001, 8002, 8004** across the kept app packages with the user’s **N, N+1, N+2, N+4** if their `port` differs.
 
-- `database.rules.json` — deny-all with `_config/frontend` readable
-- `firestore.rules` — deny-all
-- `firestore.indexes.json` — empty indexes
-- `storage.rules` — deny-all
+Also search for `localhost:8008` (storage emulator proxy in backend) only if you intentionally change storage proxy wiring — default leave as-is unless documented otherwise.
 
-## Step 4 — Scaffold app packages
+## Step 8 — Metadata and docs
 
-Apps live under the `app/` directory.
+- Update first line of `CLAUDE.md` to `# <projectName>` (body already points at `_thunderstorm` rules).
+- Set `author` / `license` in root `__package.json` if collected.
+- Update `repository.url` in app `__package.json` files to `<gitRepoUrl>` (optional but cleaner).
+- `_docs/` already exists in the template; add project-specific content as needed.
 
-### Vite frontend: `app/frontend-vite/__package.json`
+## Step 9 — Optional: remove sample `core/` library
 
-Key `unitConfig` fields for vite frontend:
+If `removeSampleCore` is true:
 
-```json
-{
-  "unitConfig": {
-    "hasSelfHotReload": true,
-    "servingPort": "N+1",
-    "type": "vite-hosting",
-    "label": "Frontend Vite",
-    "envs": {
-      "local": {
-        "config": {
-          "configUrl": "http://127.0.0.1:<N+4>/_config/frontend/manager.json?ns=<firebaseProjectIds.local>"
-        },
-        "projectId": "<firebaseProjectIds.local>"
-      }
-    }
-  }
-}
-```
+1. Delete `core/` (all three domains).
+2. Remove `@app/core-shared` and `@app/core-backend` from `app/backend/__package.json` dependencies.
+3. Remove any `@app/core-frontend` / `@app/core-shared` from the kept frontend `__package.json`.
+4. `grep -R "@app/core-" app/` and fix imports / module packs.
 
-Scripts for vite:
-```json
-{
-  "build": "vite build",
-  "start": "vite"
-}
-```
+## Step 10 — Add `initialPackages`
 
-Vite-specific devDependencies:
-```json
-{
-  "@vitejs/plugin-react": "?",
-  "vite": "?",
-  "vite-plugin-node-polyfills": "?",
-  "vite-plugin-svgr": "?",
-  "sass": "?"
-}
-```
+For each path like `messaging/shared`:
 
-Core frontend dependencies (Thunderstorm 0.500.x):
-```json
-{
-  "@nu-art/ts-common": "?",
-  "@nu-art/thunder-core": "?",
-  "@nu-art/thunder-routing": "?",
-  "@nu-art/thunder-ui-modules": "?",
-  "@nu-art/thunder-widgets": "?",
-  "@nu-art/ts-styles": "?",
-  "@nu-art/http-client": "?",
-  "@nu-art/db-api-frontend": "?",
-  "@nu-art/db-api-shared": "?",
-  "@nu-art/firebase-frontend": "?",
-  "@nu-art/sync-manager-frontend": "?",
-  "@nu-art/editable-item": "?",
-  "react": "?",
-  "react-dom": "?",
-  "react-router-dom": "?"
-}
-```
+1. Create `messaging/shared/`, `messaging/frontend/`, etc. as needed.
+2. Add `__package.json` per [reference.md](reference.md) (typescript-lib pattern, `{{APP_VERSION}}`, exports).
+3. Add minimal `src/main/index.ts` (and `src/test/` if tests expected).
+4. Wire the new packages into the **kept** app `__package.json` dependencies so BAI discovers them in the graph.
 
-Create `app/frontend-vite/src/main/index.tsx` — minimal Thunder app entry. See [reference.md](reference.md).
+## Step 11 — Initial setup
 
-### Backend: `app/backend/__package.json`
+From project root, run whatever first-time script the template ships (e.g. `bash initial-setup.sh` if present). Otherwise follow `_thunderstorm/.rules/operational/bai-cli.mdc` for install/build.
 
-Key `unitConfig` fields:
+Never use raw `pnpm install` / `pnpm run build` as the primary workflow — BAI owns the lifecycle.
 
-```json
-{
-  "unitConfig": {
-    "debugPort": "N",
-    "basePort": "N+2",
-    "functions": [
-      {
-        "name": "api",
-        "trigger": "http",
-        "resources": {
-          "cpu": 1,
-          "memory": "2Gi",
-          "timeout": 540,
-          "concurrency": 100,
-          "minInstances": 0,
-          "maxInstances": 3
-        }
-      }
-    ],
-    "type": "firebase-function",
-    "label": "Backend",
-    "sslKey": "../../.config/.ssl/localhost.key",
-    "sslCert": "../../.config/.ssl/localhost.crt",
-    "envs": {
-      "local": { "projectId": "<firebaseProjectIds.local>" }
-    }
-  }
-}
-```
+## Step 12 — Commit
 
-Core backend dependencies (Thunderstorm 0.500.x):
-```json
-{
-  "@nu-art/ts-common": "?",
-  "@nu-art/storm-core": "?",
-  "@nu-art/http-server": "?",
-  "@nu-art/api-types": "?",
-  "@nu-art/db-api-backend": "?",
-  "@nu-art/db-api-shared": "?",
-  "@nu-art/firebase-backend": "?",
-  "@nu-art/firebase-shared": "?",
-  "@nu-art/sync-manager-backend": "?",
-  "@nu-art/google-services-backend": "?",
-  "@nu-art/permissions-backend": "?",
-  "@nu-art/permissions-shared": "?",
-  "@nu-art/user-account-backend": "?",
-  "@nu-art/user-account-shared": "?",
-  "@nu-art/backup-backend": "?",
-  "@nu-art/action-processor-backend": "?",
-  "firebase": "?",
-  "firebase-admin": "?",
-  "firebase-functions": "?",
-  "express": "?"
-}
-```
-
-Create `app/backend/src/main/index.ts` — minimal Storm app entry. See [reference.md](reference.md).
-
-## Step 5 — Scaffold library packages
-
-For each entry in `initialPackages` (e.g. `"messaging/shared"`):
-
-1. Parse: `capability` = `messaging`, `domain` = `shared`
-2. Create directory: `<capability>/<domain>/`
-3. Create `__package.json`:
-
-```json
-{
-  "name": "<npmScope>/<capability>-<domain>",
-  "version": "{{APP_VERSION}}",
-  "private": true,
-  "description": "<capability> — <Domain>",
-  "license": "<license>",
-  "scripts": { "build": "tsc" },
-  "publishConfig": { "directory": "dist", "linkDirectory": true },
-  "dependencies": {
-    "@nu-art/ts-common": "?"
-  },
-  "devDependencies": {
-    "@types/chai": "?",
-    "@types/mocha": "?"
-  },
-  "unitConfig": { "type": "typescript-lib" },
-  "type": "module",
-  "exports": {
-    ".": { "types": "./index.d.ts", "import": "./index.js" },
-    "./*": { "types": "./*.d.ts", "import": "./*.js" }
-  }
-}
-```
-
-Add domain-specific thunderstorm deps:
-- `shared` → `@nu-art/db-api-shared`
-- `frontend` → `@nu-art/thunder-core`, `@nu-art/db-api-frontend`, `@nu-art/db-api-shared`, `@nu-art/http-client`, also dep on the sibling shared package
-- `backend` → `@nu-art/db-api-backend`, `@nu-art/db-api-shared`, also dep on the sibling shared package
-
-4. Create `src/main/index.ts` with a placeholder export
-5. Create `src/test/` directory
-
-## Step 6 — Additional environment configs
-
-For each environment beyond `local` in `firebaseProjectIds`, add entries to the `envs` blocks in both app `__package.json` files.
-
-## Step 7 — Create `.gitignore`
-
-```
-.fleet
-.idea/*
-!.idea/copyright/
-!.idea/dictionaries/
-!.idea/runConfigurations/
-!.idea/scopes/
-
-error
-error_message.txt
-.trash
-.ts_env
-**/node_modules
-
-node_modules
-pnpm-lock.yaml
-pnpm-workspace.yaml
-package.json
-
-.firebaserc
-.firebase
-firebase.json
-firebase-debug.log
-package-lock.json
-
-*.iml
-**/.DS_Store
-*.log
-tsconfig.json
-running-status.json
-.cache
-.config/.ssl
-```
-
-## Step 8 — Create `CLAUDE.md`
-
-```markdown
-# <projectName>
-
-This project is built on the **Thunderstorm** framework.
-Thunderstorm rules and non-negotiable principles are in [`_thunderstorm/CLAUDE.md`](_thunderstorm/CLAUDE.md).
-
-## Build system
-
-**Use BAI only.** Never run `pnpm` directly to build, test, or install.
-BAI is a standalone CLI — it is not invoked via `pnpm run`.
-
-- Commands and flags: [`_thunderstorm/.rules/operational/bai-cli.mdc`](_thunderstorm/.rules/operational/bai-cli.mdc)
-- Project structure: [`_thunderstorm/.rules/operational/project-structure.mdc`](_thunderstorm/.rules/operational/project-structure.mdc)
-```
-
-## Step 9 — Create `_docs/` structure
-
-```
-_docs/
-  specs/
-  memories/
-  troubleshooting/
-```
-
-## Step 10 — Initial setup
-
-Run the initial-setup script created in Step 3:
-
-```bash
-bash build-and-install.sh init
-```
-
-Follow on the bai rules to make sure you understand how to use it!
-
-For BAI CLI flag reference, read `_thunderstorm/.rules/operational/bai-cli.mdc`.
-
-## Step 11 — Initial commit
-
-Stage everything, commit with message: `"bootstrap: initial thunderstorm project scaffold"`.
+Commit with a clear message (e.g. `bootstrap: <projectName> from thunderstorm-sample`).
 
 ## Key rules
 
-- **Never edit generated files** — always edit `__package.json`, never `package.json` or `pnpm-workspace.yaml`
-- **Use `?` for all dependency versions** — BAI resolves workspace deps and external versions from `bai-config.json`
-- **`{{APP_VERSION}}`** — use this template variable in lib and app package versions; BAI substitutes from `bai-config.json`
-- **ESM only** — all packages use `"type": "module"`
-- **Package naming** — libs: `<npmScope>/<capability>-<domain>`, apps: `<npmScope>/<app-name>`
-- **Source structure** — `src/main/` for source, `src/test/` for tests, always
-- **Apps under `app/`** — `app/frontend-vite/` or `app/frontend/`, `app/backend/`
-- **Use BAI only** — never run `pnpm` directly; always `bash ./build-and-install.sh [flags]`. See `_thunderstorm/.rules/operational/bai-cli.mdc` for the command reference.
+- **Clone first** — boilerplate lives in `thunderstorm-sample`; the skill customizes, it does not recreate the tree file-by-file.
+- **Never edit BAI-generated** `package.json` / `pnpm-workspace.yaml` — only `__package.json` templates and source; run BAI to regenerate.
+- **`?` and `{{APP_VERSION}}`** — keep template conventions; versions resolve via `bai-config.json`.
+- **One frontend app** in active development — remove the unused `app/frontend` or `app/frontend-vite` tree to avoid duplicate workspace units.

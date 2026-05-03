@@ -1,7 +1,7 @@
 {
   "name": "thunderstorm-bootstrap",
   "displayName": "Thunderstorm Bootstrap",
-  "description": "Scaffold a new Thunderstorm monorepo project from scratch. Generates the full BAI workspace: root config, app packages, library packages, and all boilerplate — ready to build.",
+  "description": "Scaffold a new Thunderstorm monorepo by cloning nu-art-js/thunderstorm-sample, then renaming, ports, Firebase IDs, and optional packages. Does not generate the tree from scratch.",
   "version": "1.0.0",
   "author": {
     "name": "TacB0sS"

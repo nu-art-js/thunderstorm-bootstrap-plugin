@@ -1,33 +1,27 @@
 # Thunderstorm Bootstrap — Cursor Plugin
 
-A [Cursor](https://cursor.com) plugin that scaffolds a new [Thunderstorm](https://github.com/nu-art-js/thunderstorm) monorepo project from scratch.
+A [Cursor](https://cursor.com) plugin that scaffolds a new [Thunderstorm](https://github.com/nu-art-js/thunderstorm) monorepo by **cloning the official sample boilerplate**, then customizing it.
 
 ## What it does
 
-Provides a skill that walks an AI agent through creating a complete Thunderstorm (BAI) workspace:
+The skill guides an AI agent to:
 
-- Collects project parameters (name, scope, ports, firebase projects, initial packages)
-- Initializes a git repo with `_thunderstorm` as a submodule
-- Generates all root config files (`.nvmrc`, `__package.json`, `bai-config.json`, tsconfig, eslint, firebase rules)
-- Scaffolds app packages (vite frontend + firebase function backend)
-- Scaffolds library packages (shared/frontend/backend per capability)
-- Sets up `.gitignore`, `CLAUDE.md`, and `_docs/` structure
+1. **Clone** [`nu-art-js/thunderstorm-sample`](https://github.com/nu-art-js/thunderstorm-sample) (maintained Thunderstorm 0.500.x template with BAI, Vite + Webpack apps, sample `core/` library).
+2. **Re-point** `git remote` to your new repository.
+3. **Customize** workspace name, Firebase project IDs, local ports, and optional extra capability packages.
+4. **Drop** the unused frontend (`app/frontend` vs `app/frontend-vite`) and optionally the sample `core/` tree.
 
-Based on Thunderstorm 0.500.x conventions.
+It does **not** recreate the monorepo file-by-file — that stays in sync with the template repo.
 
 ## Installation
 
-Install from the [Cursor Marketplace](https://cursor.com/marketplace), or clone this repo and point Cursor at it.
+Install from the [Cursor Marketplace](https://cursor.com/marketplace), or clone this repo and install the plugin from disk.
 
 ## Usage
 
-In Cursor chat, ask the agent to create a new Thunderstorm project. The skill activates on phrases like:
-
 - "new thunderstorm project"
-- "bootstrap project"
-- "create TS project from scratch"
-
-Or invoke directly: `/bootstrap-thunderstorm-project`
+- "bootstrap thunderstorm from sample"
+- `/bootstrap-thunderstorm-project`
 
 ## License
 
