@@ -2,6 +2,10 @@
 
 Assumes the repo was cloned from `thunderstorm-sample` (`nu-art-js/thunderstorm-sample`).
 
+## Optional `specPath`
+
+When the user gives a path to a spec (e.g. another repo’s `knowledge/specs/foo/spec.md`), read it with the Read tool, use it to fill gaps in the parameter table, then optionally copy that file into the new project as `_docs/specs/<sensible-name>.md` after the clone step so the repo stays self-contained.
+
 ## Port map (template baseline N = 8000)
 
 | Field | Formula | Default |

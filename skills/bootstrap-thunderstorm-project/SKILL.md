@@ -3,8 +3,9 @@ name: bootstrap-thunderstorm-project
 description: >-
   Scaffold a new Thunderstorm monorepo by cloning the official sample boilerplate,
   then renaming, re-pointing git, adjusting ports and Firebase project IDs, and
-  optionally adding capability packages. Use for "new thunderstorm project",
-  "bootstrap BAI monorepo", or "clone thunderstorm template".
+  optionally adding capability packages. Accepts an optional product spec file path
+  (any repo or absolute path) to drive naming and initial packages. Use for "new
+  thunderstorm project", "bootstrap BAI monorepo", or "clone thunderstorm template".
 ---
 
 # Bootstrap Thunderstorm Project (clone-based)
@@ -30,6 +31,9 @@ After clone, read `_thunderstorm/.rules/operational/bai-cli.mdc` and `_thunderst
 | `frontendType` | `vite` or `webpack` — **delete the other** `app/frontend*` tree after clone |
 | `initialPackages` | e.g. `["messaging/shared","messaging/backend","messaging/frontend"]` — new capability folders |
 | `removeSampleCore` | If true: delete `core/` and strip `@app/core-*` deps and imports (search `@app/core-`) |
+| `specPath` | **Optional.** Absolute path or workspace-relative path to a product/architecture spec (markdown). User may paste or `@`-reference it. Read it **before** clone/customize to infer `projectName`, `initialPackages`, `frontendType`, phases, and integration notes. After bootstrap, optionally **copy** the spec into the new repo under `_docs/specs/` so the codebase carries its own contract. |
+
+If `specPath` is set and `initialPackages` is empty, derive capability folders from the spec (sections, resource names, or explicit package list in the doc). If both conflict, **ask the user** which wins.
 
 ## Step 2 — Clone
 

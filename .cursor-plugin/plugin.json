@@ -2,7 +2,7 @@
   "name": "thunderstorm-bootstrap",
   "displayName": "Thunderstorm Bootstrap",
   "description": "Scaffold a new Thunderstorm monorepo by cloning nu-art-js/thunderstorm-sample, then renaming, ports, Firebase IDs, and optional packages. Does not generate the tree from scratch.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "TacB0sS"
   },
