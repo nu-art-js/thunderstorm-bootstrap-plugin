@@ -52,8 +52,49 @@ Add domain deps (minimal):
 | Domain | Add (typical) |
 |--------|----------------|
 | `shared` | `@nu-art/db-api-shared` |
-| `frontend` | `@app/<capability>-shared`, `@nu-art/thunder-core`, `@nu-art/db-api-frontend`, `@nu-art/db-api-shared`, `@nu-art/http-client` |
-| `backend` | `@app/<capability>-shared`, `@nu-art/db-api-backend`, `@nu-art/db-api-shared` |
+| `frontend` (UI project) | `@<npmScope>/<capability>-shared`, `@<npmScope>/app-core-shared`, `@<npmScope>/app-core-frontend`, `@nu-art/thunder-core`, `@nu-art/db-api-frontend`, `@nu-art/db-api-shared`, `@nu-art/http-client` |
+| `frontend` (before design spec accepted) | Add `app-core-*` deps (empty placeholder packages are fine); omit feature UI code until `_docs/specs/design-language.md` is filled by the human |
+| `backend` | `@<npmScope>/<capability>-shared`, `@nu-art/db-api-backend`, `@nu-art/db-api-shared` |
+
+Replace `<npmScope>` with the project scope (e.g. `@app`, `@quai`).
+
+## `app-core` — design language implementation (UI projects)
+
+Three-domain layout (same as template `core/`, renamed for clarity):
+
+| Folder | Package name | Role |
+|--------|----------------|------|
+| `app-core/shared` | `@<npmScope>/app-core-shared` | Token types, semantic color/spacing keys, shared constants (no React). |
+| `app-core/frontend` | `@<npmScope>/app-core-frontend` | Global styles, theme, primitives; **implements** `_docs/specs/design-language.md`. |
+| `app-core/backend` | `@<npmScope>/app-core-backend` | Optional; server-driven theme or branding only. |
+
+Use the same `__package.json` typescript-lib shape as other capabilities (see above). Wire `app-core-*` into the **host** frontend app (`app/frontend-vite` or `app/frontend`) like the template wires `core-*`.
+
+## Design language spec — human-blocked stub
+
+Create `_docs/specs/design-language.md` when the human has not supplied a doc yet. The agent must not invent the visual system; replace this stub after human review.
+
+```markdown
+# Design language — DRAFT (blocked on human)
+
+**Status:** BLOCKED — human must complete before any feature UI work.
+
+## Required sections (human fills all)
+
+1. **Brand & tone** — personality, marketing vs. clinical density (if applicable).
+2. **Typography** — font stacks, scale (e.g. modular steps), weights, line heights.
+3. **Color** — semantic tokens (background, surface, text, border, primary, danger, success…), light/dark if applicable, contrast requirements (WCAG target).
+4. **Spacing & layout** — base unit, scale, breakpoints, max content width.
+5. **Shape** — border radius, dividers.
+6. **Elevation** — shadows / layers.
+7. **Motion** — duration/easing rules or “none”.
+8. **Components** — which primitives exist in app-core vs. direct thunder-widgets usage.
+9. **Thunderstorm integration** — how `@nu-art/thunder-widgets`, `@nu-art/ts-styles`, and routing shells align with the above.
+
+## Agent implementation note
+
+After this document is accepted, implement tokens in `app-core/shared` and visuals in `app-core/frontend` only; domain `*/frontend` packages consume app-core — no one-off global theme in domain packages.
+```
 
 ## Minimal `src/main/index.ts` (library)
 
@@ -70,11 +111,15 @@ Local pattern from template:
 - `"projectId": "<your-local-firebase-project-id>"`
 - `"configUrl": "http://127.0.0.1:<N+4>/_config/frontend/manager.json?ns=<your-local-firebase-project-id>-default-rtdb"`
 
-## Removing `core/`
+## Removing template `core/` vs. adopting `app-core/`
 
-Dependencies to remove from `app/backend/__package.json`:
+**Headless repo (no kept frontend):** remove `core/` and strip `@app/core-*` from any remaining `app/backend` (or other) manifests; delete `core/*` directories.
 
-- `@app/core-shared`
-- `@app/core-backend`
+**UI repo (`requiresUi`):** do not remove the design surface — **replace** template `core/` with **`app-core/`** (shared + frontend + optional backend), wire `@<npmScope>/app-core-*` into the host frontend (and backend if needed), then delete `core/*`. Remove old `@app/core-*` / `@<npmScope>/core-*` dependency keys and imports.
 
-Search frontends for `@app/core-` and remove. Then delete `core/shared`, `core/frontend`, `core/backend` directories.
+Dependencies to remove when dropping template `core/`:
+
+- `@app/core-shared`, `@app/core-backend` from `app/backend/__package.json` (replace with `app-core-*` if used)
+- `@app/core-frontend`, `@app/core-shared` from the kept frontend `__package.json` (replace with `app-core-*`)
+
+Search `app/` for `@app/core-` / `@<npmScope>/core-` and fix imports and module packs.
