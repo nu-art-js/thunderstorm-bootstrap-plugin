@@ -201,13 +201,55 @@ For each path like `messaging/shared`:
 4. Wire the new packages into the **kept** app `__package.json` dependencies so BAI discovers them in the graph.
 5. If **`requiresUi`** and any new package is `*/frontend`, add **`@<npmScope>/app-core-frontend`** and **`@<npmScope>/app-core-shared`** to that package’s `__package.json` dependencies (design system composition — not optional for domain UI).
 
-## Step 11 — Initial setup
+## Step 11 — Dev workspace launcher config (recommended for local dev)
+
+If the project is developed locally with multiple long-running processes (watch,
+backend, one or more frontends), scaffold a dev workspace so the machine-wide
+`launch-workspace` skill (repo: `agent-skill--launch-workspace`) can open them as
+one Ghostty split grid. No per-project script or schema is copied — only a
+manifest plus a config declaration.
+
+1. **Create the manifest** at `.cursor/dev-workspaces/workspaces.json`:
+   ```json
+   {
+     "$schema": "https://raw.githubusercontent.com/nu-art-js/agent-skill--launch-workspace/main/skills/launch-workspace/workspaces.schema.json",
+     "workspaces": {
+       "<projectName>-dev": {
+         "title": "<projectName> Dev",
+         "root": ".",
+         "panes": [
+           { "label": "watch",    "command": "bai -w -wbt" },
+           { "label": "backend",  "command": "sleep 1 && bai -nb -up=@<npmScope>/<app>-backend -l" },
+           { "label": "frontend", "command": "sleep 2 && bai -nb -up=@<npmScope>/<app>-frontend -lf" }
+         ]
+       }
+     }
+   }
+   ```
+   Stagger non-watch panes with `sleep N &&` so services don't race on ports/build
+   at the same instant. Pick the pane set to match the kept apps.
+
+2. **Declare it** in `.cursor/project-config.yaml` (the SSOT for project junctions;
+   the agent reads this to locate the manifest — it is not hardcoded convention):
+   ```yaml
+   dev-workspaces:
+     manifest: .cursor/dev-workspaces/workspaces.json
+     skill: launch-workspace
+   ```
+
+3. **Gitignore the logs** — the launcher writes per-pane logs under
+   `.cursor/scratch/`. Ensure `.cursor/scratch/` (and `*.log`) are gitignored.
+
+The `launch-workspace` skill must be installed machine-wide (`~/.cursor/skills/`)
+for this to run; see that skill for layouts, `--status`, logs, and reconcile.
+
+## Step 12 — Initial setup
 
 From project root, run `bash build-and-install.sh init`. This is the **only** correct bootstrap command for a fresh clone — it creates a temporary `package.json`, installs tsx via pnpm, then runs the full BAI pipeline. **Do not** run `initial-setup.sh` or pass raw flags like `-fs -th -p -cox` — those assume tsx is already installed and will fail on a fresh clone.
 
 Never use raw `pnpm install` / `pnpm run build` as the primary workflow — BAI owns the lifecycle.
 
-## Step 12 — Commit
+## Step 13 — Commit
 
 Commit with a clear message (e.g. `bootstrap: <projectName> from thunderstorm-sample`).
 
