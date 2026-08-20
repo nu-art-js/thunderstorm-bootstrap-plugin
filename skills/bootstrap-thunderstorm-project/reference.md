@@ -1,6 +1,6 @@
 # Reference — Bootstrap Thunderstorm Project (post-clone)
 
-Assumes the repo was cloned from `thunderstorm-sample` (`nu-art-js/thunderstorm-sample`).
+Assumes the repo was cloned from `thunderstorm-sample` (`nu-art-js/thunderstorm-sample`) **with `_thunderstorm` initialized** (`git clone --recurse-submodules` or `git submodule update --init --recursive`). Init BAI through the repo `build-and-install.sh` (it pins 0.500.x). Docker must be up before `bai -l` / e2e. Set `GCP_PROJECT_ID` to a real GCP project before password-auth.
 
 ## Optional `specPath`
 
@@ -13,10 +13,11 @@ When the user gives a path to a spec (e.g. another repo’s `knowledge/specs/foo
 | Backend `unitConfig.debugPort` | N | 8000 |
 | Backend `unitConfig.basePort` | N + 2 | 8002 |
 | Frontend `unitConfig.servingPort` | N + 1 | 8001 |
-| Webpack `webpackConfig.devServerPort` | N + 1 | 8001 |
 | `envs.local.config.configUrl` | `http://127.0.0.1:<N+4>/...` | port **8004** |
 
-Grep for `8000`, `8001`, `8002`, `8004` in `app/**/__package.json` after choosing the kept frontend.
+Grep for `8000`, `8001`, `8002`, `8004` in `app/**/__package.json`.
+
+`app/e2e` uses a **dedicated** backend/mongo zone (sample defaults **8102** / **27039**) so mocha does not collide with human `bai -l` on N+2. Retarget `SAMPLE_E2E_*` and the Firebase project id when remapping ports.
 
 ## New capability package `__package.json` (typescript-lib)
 
@@ -68,7 +69,7 @@ Three-domain layout (same as template `core/`, renamed for clarity):
 | `app-core/frontend` | `@<npmScope>/app-core-frontend` | Global styles, theme, primitives; **implements** `_docs/specs/design-language.md`. |
 | `app-core/backend` | `@<npmScope>/app-core-backend` | Optional; server-driven theme or branding only. |
 
-Use the same `__package.json` typescript-lib shape as other capabilities (see above). Wire `app-core-*` into the **host** frontend app (`app/frontend-vite` or `app/frontend`) like the template wires `core-*`.
+Use the same `__package.json` typescript-lib shape as other capabilities (see above). Wire `app-core-*` into the **host** frontend app (`app/frontend-vite`) like the template wires `core-*`.
 
 ## Design language spec — human-blocked stub
 
