@@ -6,10 +6,10 @@ A [Cursor](https://cursor.com) plugin that scaffolds a new [Thunderstorm](https:
 
 The skill guides an AI agent to:
 
-1. **Clone** [`nu-art-js/thunderstorm-sample`](https://github.com/nu-art-js/thunderstorm-sample) (maintained Thunderstorm 0.500.x template with BAI, Vite + Webpack apps, sample `core/` library).
+1. **Clone** [`nu-art-js/thunderstorm-sample`](https://github.com/nu-art-js/thunderstorm-sample) (Thunderstorm 0.500.x, Vite frontend, sample `core/` library, `deploy.sh`, e2e, dev workspace).
 2. **Re-point** `git remote` to your new repository.
-3. **Customize** workspace name, Firebase project IDs, local ports, and optional extra capability packages.
-4. **Drop** the unused frontend (`app/frontend` vs `app/frontend-vite`) and optionally the sample `core/` tree.
+3. **Customize** workspace name, Firebase project IDs, the port params in `bai-config.json`, and optional extra capability packages.
+4. **Drop** `app/frontend-vite` only for a headless repo, and optionally the sample `core/` tree. Do not rewrite `deploy.sh`.
 
 It does **not** recreate the monorepo file-by-file — that stays in sync with the template repo.
 

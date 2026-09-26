@@ -155,35 +155,48 @@ Regenerate workspace metadata with BAI after edits (see Step 9).
 
 ## Step 6 — Firebase project IDs and RTDB config URL
 
-In **remaining** app `__package.json` files (`app/backend/`, `app/frontend-vite/` if kept):
+The template already has `local` / `dev` / `staging` / `prod` on the backend and the Vite app. Do not add a fifth env or a second config file.
 
-- Replace placeholder `demo-project` / `real-project` with `firebaseProjectIds.local` (and other env keys if user provided them).
-- In `envs.*.config.configUrl`, the `ns=` query segment must match the Firebase RTDB namespace for that project (pattern used in template: `<projectId>-default-rtdb`). Update `ns=` when `projectId` changes.
-
-Add `envs` entries for `dev` / `staging` / `prod` mirroring the pattern in a mature project (see e.g. news-scraper) if the user supplied those IDs.
+- Set `FIREBASE_PROJECT_LOCAL` in `bai-config.json` `templateParams.params` to `firebaseProjectIds.local`. Backend and frontend local `projectId` and the local `ns=` segment read that param. Do not hardcode the id next to the ports.
+- Replace `replace-dev`, `replace-staging`, and `replace-prod` (project ids and the matching `*-default-rtdb` hostnames) with the ids the user supplied. Leave a `replace-*` placeholder only when the user did not give that env.
+- Set `ARTIFACT_PROJECT_ID` (and `ARTIFACT_REGION` if it is not `us-central1`). Set `containerDeployment.imageName` and `hostingDeployment.packageName` from the project slug (`<slug>-backend`, `<slug>-frontend`). Repository names `web-apps` and `hosting-builds` stay unless the user says otherwise.
 
 ## Step 7 — Ports
 
-Template defaults (before customization) use **N = 8000**:
+Human ports are **one object**: `bai-config.json` → `templateParams.params`.
 
-| Role | Port |
-|------|------|
-| Backend `debugPort` | N |
-| Frontend `servingPort` | N + 1 |
-| Backend `basePort` | N + 2 |
-| `configUrl` host port (`http://127.0.0.1:<port>/...`) | N + 4 |
+| Param | Formula | Sample default |
+|-------|---------|----------------|
+| `PORT_BACKEND_DEBUG` | N | 8000 |
+| `PORT_FRONTEND` | N + 1 | 8001 |
+| `PORT_BACKEND_APEX` | N + 2 | 8002 |
+| `PORT_CONFIG` | N + 4 | 8004 |
+| `PORT_MONGO` | host mongo for `bai -l` | 27018 |
 
-Replace **8000, 8001, 8002, 8004** across the kept app packages with the user’s **N, N+1, N+2, N+4** if their `port` differs.
+If the user’s `port` differs, change those five numbers. Do not hunt `8000` through `__package.json` — those files already use `{{PORT_*}}`.
 
-Keep **`app/e2e`**. It is a product consumer of `@nu-art/e2e-harness` (not another harness copy). Retarget its dedicated zone so it does not collide with human `bai -l` on **N+2**:
+Also set the listen fallback in `app/backend/src/main/index.ts` to the same **N+2** when you change `PORT_BACKEND_APEX`.
+
+Keep **`app/e2e`**. It is a product consumer of `@nu-art/e2e-harness`. Do not add `app/e2e-harness` or a second stack. Retarget only `app/e2e/src/test/sample-e2e-harness-constants.ts`:
 
 | Constant | Sample default | After port remap |
 |----------|----------------|------------------|
 | E2E backend (`SAMPLE_E2E_BACKEND_PORT`) | 8102 | a free port, typically **N+102** |
-| E2E mongo (`SAMPLE_E2E_MONGO_PORT`) | 27039 | keep or pick an unused host port |
+| E2E mongo (`SAMPLE_E2E_MONGO_PORT`) | 27039 | keep or pick an unused host port, not `PORT_MONGO` |
 | E2E Firebase project id | `demo-project` | `firebaseProjectIds.local` |
 
+Rename the `sample-e2e-*` filenames, the `SAMPLE_E2E_*` constants, and the mongo container name `mongo-emu-sample-e2e-harness` to the project slug. Do not leave the word `sample` in the e2e package.
+
 Also search for `localhost:8008` (storage emulator proxy in backend) only if you intentionally change storage proxy wiring — default leave as-is unless documented otherwise.
+
+## Step 7b — Deploy script (already in the clone)
+
+`deploy.sh`, `deploy_rtdb_deltas.py`, `deploy_rtdb_deltas_test.py`, and `releases/README.md` ship with the template. Do not rewrite them and do not add a second deploy script.
+
+- Headless (`keepFrontend` false): remove `@app/frontend-vite` from `DEFAULT_UNITS` in `deploy.sh`.
+- Otherwise leave `DEFAULT_UNITS` as `@app/backend,@app/frontend-vite`. If the npm scope is not `@app`, change those unit names to match.
+- `BACKEND_UNIT` must stay the package whose `unitConfig.containerDeployment` the delta walker reads (`app/backend/package.json`).
+- Prod stays gated on `DEPLOY_CONFIRM_PROD=yes`. Do not remove that gate.
 
 ## Step 8 — Metadata and docs
 
@@ -218,47 +231,13 @@ For each path like `messaging/shared`:
 4. Wire the new packages into the **kept** app `__package.json` dependencies so BAI discovers them in the graph.
 5. If **`requiresUi`** and any new package is `*/frontend`, add **`@<npmScope>/app-core-frontend`** and **`@<npmScope>/app-core-shared`** to that package’s `__package.json` dependencies (design system composition — not optional for domain UI).
 
-## Step 11 — Dev workspace launcher config (recommended for local dev)
+## Step 11 — Dev workspace launcher config
 
-If the project is developed locally with multiple long-running processes (watch,
-backend, one or more frontends), scaffold a dev workspace so the machine-wide
-`launch-workspace` skill (repo: `agent-skill--launch-workspace`) can open them as
-one Ghostty split grid. No per-project script or schema is copied — only a
-manifest plus a config declaration.
+The clone already has `.cursor/dev-workspaces/workspaces.json` and `.cursor/project-config.yaml`. `.cursor/scratch/` is gitignored. Do not add a second manifest or a per-project launcher script.
 
-1. **Create the manifest** at `.cursor/dev-workspaces/workspaces.json`:
-   ```json
-   {
-     "$schema": "https://raw.githubusercontent.com/nu-art-js/agent-skill--launch-workspace/main/skills/launch-workspace/workspaces.schema.json",
-     "workspaces": {
-       "<projectName>-dev": {
-         "title": "<projectName> Dev",
-         "root": ".",
-         "panes": [
-           { "label": "watch",    "command": "bai -w -wbt" },
-           { "label": "backend",  "command": "sleep 1 && bai -nb -up=@<npmScope>/<app>-backend -l" },
-           { "label": "frontend", "command": "sleep 2 && bai -nb -up=@<npmScope>/frontend-vite -lf" }
-         ]
-       }
-     }
-   }
-   ```
-   Stagger non-watch panes with `sleep N &&` so services don't race on ports/build
-   at the same instant. Pick the pane set to match the kept apps.
+Rename the `sample-dev` key and title to `<projectName>-dev`. Point pane `-up=` values at the kept package names (`@app/backend` and `@app/frontend-vite`, or the new scope if you renamed `@app` everywhere). Drop the frontend pane when headless. Keep the `sleep` stagger.
 
-2. **Declare it** in `.cursor/project-config.yaml` (the SSOT for project junctions;
-   the agent reads this to locate the manifest — it is not hardcoded convention):
-   ```yaml
-   dev-workspaces:
-     manifest: .cursor/dev-workspaces/workspaces.json
-     skill: launch-workspace
-   ```
-
-3. **Gitignore the logs** — the launcher writes per-pane logs under
-   `.cursor/scratch/`. Ensure `.cursor/scratch/` (and `*.log`) are gitignored.
-
-The `launch-workspace` skill must be installed machine-wide (`~/.cursor/skills/`)
-for this to run; see that skill for layouts, `--status`, logs, and reconcile.
+The `launch-workspace` skill must be installed machine-wide (`~/.cursor/skills/`) for this to run.
 
 ## Step 12 — Initial setup
 
@@ -332,7 +311,9 @@ Commit with a clear message (e.g. `bootstrap: <projectName> from thunderstorm-sa
 - **Docker must be running** before `bai -l` or product e2e. **`GCP_PROJECT_ID`** must be a real GCP project before password-auth / JWT.
 - **Never edit BAI-generated** `package.json` / `pnpm-workspace.yaml` — only `__package.json` templates and source; run BAI to regenerate.
 - **Never subset-install** — `bai -i -up=<subset>` rewrites a broken workspace file. Full `init` / `bai -i -nb` only.
-- **Keep `@app/e2e`** — retarget ports and Firebase project id; do not add another `@app/e2e-harness` copy (use `@nu-art/e2e-harness`).
+- **Keep `@app/e2e`** — retarget the constants file and rename `sample-e2e-*` to the project slug. Do not add another `@app/e2e-harness` copy (use `@nu-art/e2e-harness`). Do not add Jest or Vitest. Firebase tests are `*.test.firebase.ts` via `stormTester`; Playwright tests are `*.test.playwright.ts`.
+- **Ports live in `bai-config.json` `templateParams.params`.** Do not hardcode `8000`–`8004` into `__package.json`.
+- **Do not rewrite `deploy.sh` or `deploy_rtdb_deltas.py`.** Retarget `DEFAULT_UNITS` / image names / `replace-*` project ids only. Config deltas are `releases/<semver>.json`. Prod stays behind `DEPLOY_CONFIRM_PROD=yes`.
 - **`?` and `{{APP_VERSION}}`** — keep template conventions; versions resolve via `bai-config.json` (include `"mongodb": "^7.1.1"`, and `"konva"` / `"react-konva"` when the Thunderstorm revision includes `@nu-art/konva-chart`).
 - **Vite is the only app frontend** — do not add a webpack `app/frontend` tree.
 - **UI requires a design language first** — human specifies `_docs/specs/design-language.md`; agent implements **`app-core/frontend`** (plus `app-core/shared`). No domain feature UI before that contract exists.

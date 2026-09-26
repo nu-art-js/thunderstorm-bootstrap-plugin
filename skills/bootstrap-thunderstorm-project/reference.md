@@ -8,16 +8,25 @@ When the user gives a path to a spec (e.g. another repo’s `knowledge/specs/foo
 
 ## Port map (template baseline N = 8000)
 
-| Field | Formula | Default |
+Edit **only** `bai-config.json` → `templateParams.params`. `__package.json` already uses `{{PORT_*}}`.
+
+| Param | Formula | Default |
 |-------|---------|---------|
-| Backend `unitConfig.debugPort` | N | 8000 |
-| Backend `unitConfig.basePort` | N + 2 | 8002 |
-| Frontend `unitConfig.servingPort` | N + 1 | 8001 |
-| `envs.local.config.configUrl` | `http://127.0.0.1:<N+4>/...` | port **8004** |
+| `PORT_BACKEND_DEBUG` | N | 8000 |
+| `PORT_FRONTEND` | N + 1 | 8001 |
+| `PORT_BACKEND_APEX` | N + 2 | 8002 |
+| `PORT_CONFIG` | N + 4 | 8004 |
+| `PORT_MONGO` | human mongo (`bai -l`) | 27018 |
 
-Grep for `8000`, `8001`, `8002`, `8004` in `app/**/__package.json`.
+Also set the listen fallback in `app/backend/src/main/index.ts` to N+2.
 
-`app/e2e` uses a **dedicated** backend/mongo zone (sample defaults **8102** / **27039**) so mocha does not collide with human `bai -l` on N+2. Retarget `SAMPLE_E2E_*` and the Firebase project id when remapping ports.
+`FIREBASE_PROJECT_LOCAL` and `ARTIFACT_PROJECT_ID` are in the same params object. Live env ids are the `replace-dev` / `replace-staging` / `replace-prod` strings in the app `__package.json` files.
+
+`app/e2e` uses a **dedicated** backend/mongo zone (sample defaults **8102** / **27039**) so mocha does not collide with human `bai -l` on N+2. Retarget `app/e2e/src/test/sample-e2e-harness-constants.ts` only, then rename `sample-e2e-*` to the project slug.
+
+## Deploy (already in the clone)
+
+`deploy.sh` + `deploy_rtdb_deltas.py` + `releases/`. Do not rewrite. Headless: drop `@app/frontend-vite` from `DEFAULT_UNITS`. Change unit names if the npm scope is not `@app`. Leave the prod gate (`DEPLOY_CONFIRM_PROD=yes`) in place.
 
 ## New capability package `__package.json` (typescript-lib)
 
