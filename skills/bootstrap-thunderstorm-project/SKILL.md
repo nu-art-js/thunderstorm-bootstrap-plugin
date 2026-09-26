@@ -174,9 +174,10 @@ Regenerate workspace metadata with BAI after edits (see Step 9).
 
 The template already has `local` / `dev` / `staging` / `prod` on the backend and the Vite app. Do not add a fifth env or a second config file.
 
-- Set `FIREBASE_PROJECT_LOCAL` in `bai-config.json` `templateParams.params` to `firebaseProjectIds.local`. Backend and frontend local `projectId` and the local `ns=` segment read that param. Do not hardcode the id next to the ports.
+- Write `firebaseProjectIds.local` as a literal on the backend and frontend `local.projectId`, and in the local `ns=` hostname. Published BAI 0.500.6 does not substitute `templateParams.params` during prepare, so `{{FIREBASE_PROJECT_LOCAL}}` fails with `Missing template param`.
+- Keep the same id in `bai-config.json` `templateParams.params` so the checklist matches the literals.
 - Replace `replace-dev`, `replace-staging`, and `replace-prod` (project ids and the matching `*-default-rtdb` hostnames) with the ids the user supplied. Leave a `replace-*` placeholder only when the user did not give that env.
-- Set `ARTIFACT_PROJECT_ID` (and `ARTIFACT_REGION` if it is not `us-central1`). Set `containerDeployment.imageName` and `hostingDeployment.packageName` from the project slug (`<slug>-backend`, `<slug>-frontend`). Repository names `web-apps` and `hosting-builds` stay unless the user says otherwise.
+- Write `ARTIFACT_PROJECT_ID` and `ARTIFACT_REGION` as literals on `containerDeployment` and `hostingDeployment`. Keep the same values in `templateParams.params`. Set `imageName` and `packageName` from the project slug (`<slug>-backend`, `<slug>-frontend`). Repository names `web-apps` and `hosting-builds` stay unless the user says otherwise.
 
 ## Step 7 — Ports
 
@@ -190,7 +191,7 @@ Human ports are **one object**: `bai-config.json` → `templateParams.params`.
 | `PORT_CONFIG` | N + 4 | 8004 |
 | `PORT_MONGO` | host mongo for `bai -l` | 27018 |
 
-If the user’s `port` differs, change those five numbers in `bai-config.json`, then set the same literals in the app `__package.json` files: backend `debugPort`, `basePort`, and `mongo.port`, and frontend `servingPort`. Published BAI 0.500.6 validates `unitConfig` before it substitutes `{{PARAM}}`, so a port written as `"{{PORT_BACKEND_APEX}}"` fails validation. String params (`{{FIREBASE_PROJECT_LOCAL}}`, `{{ARTIFACT_PROJECT_ID}}`, `{{ARTIFACT_REGION}}`, `{{PORT_CONFIG}}` inside a URL) are fine.
+If the user’s `port` differs, change those five numbers in `bai-config.json`, then write the same literals in the app `__package.json` files: backend `debugPort`, `basePort`, and `mongo.port` (only `port` and optional `dbName` — do not add `dataDir`), frontend `servingPort`, and the config URL port. Published BAI 0.500.6 does not substitute `templateParams.params` into `unitConfig`. Any `{{PORT_*}}`, `{{FIREBASE_*}}`, or `{{ARTIFACT_*}}` fails prepare or validation. `{{APP_VERSION}}` still works; it comes from `templateParams.packageJson`.
 
 Also set the listen fallback in `app/backend/src/main/index.ts` to the same **N+2** when you change `PORT_BACKEND_APEX`.
 
@@ -329,7 +330,7 @@ Commit with a clear message (e.g. `bootstrap: <projectName> from thunderstorm-sa
 - **Never edit BAI-generated** `package.json` / `pnpm-workspace.yaml` — only `__package.json` templates and source; run BAI to regenerate.
 - **Never subset-install** — `bai -i -up=<subset>` rewrites a broken workspace file. Full `init` / `bai -i -nb` only.
 - **Keep `@app/e2e`** — retarget the constants file and rename `sample-e2e-*` to the project slug. Do not add another `@app/e2e-harness` copy (use `@nu-art/e2e-harness`). Do not add Jest or Vitest. Firebase tests are `*.test.firebase.ts` via `stormTester`; Playwright tests are `*.test.playwright.ts`.
-- **Ports:** named values live in `bai-config.json` `templateParams.params`. Copy the numeric ones into `__package.json` as literals (`debugPort`, `basePort`, `mongo.port`, `servingPort`). BAI 0.500.6 rejects `"{{PORT_*}}"` on those fields.
+- **Ports and project ids:** keep the names in `bai-config.json` `templateParams.params`, and write the same values as literals in app `__package.json` `unitConfig`. Published BAI 0.500.6 does not substitute `templateParams.params`. `mongo` is `port` plus optional `dbName` only.
 - **Beamz MCP:** replace `<project-name>` in `.cursor/mcp.json` with the project slug. Leave `https://api.beamz.dev/mcp/beamz`. The product spec lives in that Beamz knowledge project. Without `specPath`, write only a pointer at `_docs/specs/product.md`.
 - **Do not rewrite `deploy.sh` or `deploy_rtdb_deltas.py`.** Retarget `DEFAULT_UNITS` / image names / `replace-*` project ids only. Config deltas are `releases/<semver>.json`. Prod stays behind `DEPLOY_CONFIRM_PROD=yes`.
 - **`?` and `{{APP_VERSION}}`** — keep template conventions; versions resolve via `bai-config.json` (include `"mongodb": "^7.1.1"`, and `"konva"` / `"react-konva"` when the Thunderstorm revision includes `@nu-art/konva-chart`).

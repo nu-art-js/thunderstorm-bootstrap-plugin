@@ -10,7 +10,7 @@ When `specPath` is empty, write `_docs/specs/product.md` as a pointer to Beamz k
 
 ## Port map (template baseline N = 8000)
 
-Set the names in `bai-config.json` → `templateParams.params`, then copy the numeric ports into `__package.json` as literals. BAI 0.500.6 validates `unitConfig` before substituting `{{PARAM}}`, so `debugPort`, `basePort`, `mongo.port`, and `servingPort` cannot be `"{{PORT_*}}"`.
+Set the names in `bai-config.json` → `templateParams.params`, then write the same values as literals in app `__package.json` `unitConfig` (ports, local Firebase id, artifact project, artifact region, and the config URL). Published BAI 0.500.6 does not substitute `templateParams.params`. `mongo` is `port` and optional `dbName` only — do not add `dataDir`.
 
 | Param | Formula | Default |
 |-------|---------|---------|
@@ -22,7 +22,7 @@ Set the names in `bai-config.json` → `templateParams.params`, then copy the nu
 
 Also set the listen fallback in `app/backend/src/main/index.ts` to N+2.
 
-`FIREBASE_PROJECT_LOCAL` and `ARTIFACT_PROJECT_ID` are in the same params object. Live env ids are the `replace-dev` / `replace-staging` / `replace-prod` strings in the app `__package.json` files.
+`FIREBASE_PROJECT_LOCAL`, `ARTIFACT_PROJECT_ID`, and `ARTIFACT_REGION` live in that params object and as matching literals in the app `__package.json` files. Live env ids are the `replace-dev` / `replace-staging` / `replace-prod` strings in those same files.
 
 `app/e2e` uses a **dedicated** backend/mongo zone (sample defaults **8102** / **27039**) so mocha does not collide with human `bai -l` on N+2. Retarget `app/e2e/src/test/sample-e2e-harness-constants.ts` only, then rename `sample-e2e-*` to the project slug.
 
