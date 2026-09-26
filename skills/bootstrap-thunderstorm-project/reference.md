@@ -10,7 +10,7 @@ When `specPath` is empty, write `_docs/specs/product.md` as a pointer to Beamz k
 
 ## Port map (template baseline N = 8000)
 
-Edit **only** `bai-config.json` → `templateParams.params`. `__package.json` already uses `{{PORT_*}}`.
+Set the names in `bai-config.json` → `templateParams.params`, then copy the numeric ports into `__package.json` as literals. BAI 0.500.6 validates `unitConfig` before substituting `{{PARAM}}`, so `debugPort`, `basePort`, `mongo.port`, and `servingPort` cannot be `"{{PORT_*}}"`.
 
 | Param | Formula | Default |
 |-------|---------|---------|

@@ -190,7 +190,7 @@ Human ports are **one object**: `bai-config.json` → `templateParams.params`.
 | `PORT_CONFIG` | N + 4 | 8004 |
 | `PORT_MONGO` | host mongo for `bai -l` | 27018 |
 
-If the user’s `port` differs, change those five numbers. Do not hunt `8000` through `__package.json` — those files already use `{{PORT_*}}`.
+If the user’s `port` differs, change those five numbers in `bai-config.json`, then set the same literals in the app `__package.json` files: backend `debugPort`, `basePort`, and `mongo.port`, and frontend `servingPort`. Published BAI 0.500.6 validates `unitConfig` before it substitutes `{{PARAM}}`, so a port written as `"{{PORT_BACKEND_APEX}}"` fails validation. String params (`{{FIREBASE_PROJECT_LOCAL}}`, `{{ARTIFACT_PROJECT_ID}}`, `{{ARTIFACT_REGION}}`, `{{PORT_CONFIG}}` inside a URL) are fine.
 
 Also set the listen fallback in `app/backend/src/main/index.ts` to the same **N+2** when you change `PORT_BACKEND_APEX`.
 
@@ -329,7 +329,7 @@ Commit with a clear message (e.g. `bootstrap: <projectName> from thunderstorm-sa
 - **Never edit BAI-generated** `package.json` / `pnpm-workspace.yaml` — only `__package.json` templates and source; run BAI to regenerate.
 - **Never subset-install** — `bai -i -up=<subset>` rewrites a broken workspace file. Full `init` / `bai -i -nb` only.
 - **Keep `@app/e2e`** — retarget the constants file and rename `sample-e2e-*` to the project slug. Do not add another `@app/e2e-harness` copy (use `@nu-art/e2e-harness`). Do not add Jest or Vitest. Firebase tests are `*.test.firebase.ts` via `stormTester`; Playwright tests are `*.test.playwright.ts`.
-- **Ports live in `bai-config.json` `templateParams.params`.** Do not hardcode `8000`–`8004` into `__package.json`.
+- **Ports:** named values live in `bai-config.json` `templateParams.params`. Copy the numeric ones into `__package.json` as literals (`debugPort`, `basePort`, `mongo.port`, `servingPort`). BAI 0.500.6 rejects `"{{PORT_*}}"` on those fields.
 - **Beamz MCP:** replace `<project-name>` in `.cursor/mcp.json` with the project slug. Leave `https://api.beamz.dev/mcp/beamz`. The product spec lives in that Beamz knowledge project. Without `specPath`, write only a pointer at `_docs/specs/product.md`.
 - **Do not rewrite `deploy.sh` or `deploy_rtdb_deltas.py`.** Retarget `DEFAULT_UNITS` / image names / `replace-*` project ids only. Config deltas are `releases/<semver>.json`. Prod stays behind `DEPLOY_CONFIRM_PROD=yes`.
 - **`?` and `{{APP_VERSION}}`** — keep template conventions; versions resolve via `bai-config.json` (include `"mongodb": "^7.1.1"`, and `"konva"` / `"react-konva"` when the Thunderstorm revision includes `@nu-art/konva-chart`).
