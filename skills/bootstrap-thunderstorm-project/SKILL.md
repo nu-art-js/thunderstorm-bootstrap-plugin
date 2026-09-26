@@ -40,6 +40,15 @@ After clone, read `_thunderstorm/.rules/operational/bai-cli.mdc` and `_thunderst
 
 If `specPath` is set and `initialPackages` is empty, derive capability folders from the spec (sections, resource names, or explicit package list in the doc). If both conflict, **ask the user** which wins.
 
+### Product spec lives in Beamz
+
+When `specPath` is empty, the product spec is not a file in the new repo. It lives in **Beamz knowledge** for the MCP server key from step 5b (`https://api.beamz.dev/mcp/beamz`).
+
+- Do not invent a product spec, and do not block the clone because one is missing.
+- Write `_docs/specs/product.md` as a pointer only: the spec is Beamz knowledge for `<projectName>`. Do not paste a guessed spec there.
+- Later work reads the spec from that Beamz project. Copy it into the repo only when the human asks for a snapshot.
+- A local `specPath` still wins when the human hands you a file: read it, derive packages, and copy it under `_docs/specs/` as today.
+
 ## Design language gate (projects with UI)
 
 Applies whenever the monorepo keeps a Thunderstorm frontend app (`vite-hosting`).
@@ -321,7 +330,7 @@ Commit with a clear message (e.g. `bootstrap: <projectName> from thunderstorm-sa
 - **Never subset-install** — `bai -i -up=<subset>` rewrites a broken workspace file. Full `init` / `bai -i -nb` only.
 - **Keep `@app/e2e`** — retarget the constants file and rename `sample-e2e-*` to the project slug. Do not add another `@app/e2e-harness` copy (use `@nu-art/e2e-harness`). Do not add Jest or Vitest. Firebase tests are `*.test.firebase.ts` via `stormTester`; Playwright tests are `*.test.playwright.ts`.
 - **Ports live in `bai-config.json` `templateParams.params`.** Do not hardcode `8000`–`8004` into `__package.json`.
-- **Beamz MCP:** replace `<project-name>` in `.cursor/mcp.json` with the project slug. Leave `https://api.beamz.dev/mcp/beamz`.
+- **Beamz MCP:** replace `<project-name>` in `.cursor/mcp.json` with the project slug. Leave `https://api.beamz.dev/mcp/beamz`. The product spec lives in that Beamz knowledge project. Without `specPath`, write only a pointer at `_docs/specs/product.md`.
 - **Do not rewrite `deploy.sh` or `deploy_rtdb_deltas.py`.** Retarget `DEFAULT_UNITS` / image names / `replace-*` project ids only. Config deltas are `releases/<semver>.json`. Prod stays behind `DEPLOY_CONFIRM_PROD=yes`.
 - **`?` and `{{APP_VERSION}}`** — keep template conventions; versions resolve via `bai-config.json` (include `"mongodb": "^7.1.1"`, and `"konva"` / `"react-konva"` when the Thunderstorm revision includes `@nu-art/konva-chart`).
 - **Vite is the only app frontend** — do not add a webpack `app/frontend` tree.

@@ -2,9 +2,11 @@
 
 Assumes the repo was cloned from `thunderstorm-sample` (`nu-art-js/thunderstorm-sample`) **with `_thunderstorm` initialized** (`git clone --recurse-submodules` or `git submodule update --init --recursive`). Init BAI through the repo `build-and-install.sh` (it pins 0.500.x). Docker must be up before `bai -l` / e2e. Set `GCP_PROJECT_ID` to a real GCP project before password-auth.
 
-## Optional `specPath`
+## Product spec
 
-When the user gives a path to a spec (e.g. another repo’s `knowledge/specs/foo/spec.md`), read it with the Read tool, use it to fill gaps in the parameter table, then optionally copy that file into the new project as `_docs/specs/<sensible-name>.md` after the clone step so the repo stays self-contained.
+When the user gives `specPath` (a local markdown file), read it with the Read tool, use it to fill gaps in the parameter table, then copy it into the new project as `_docs/specs/<sensible-name>.md`.
+
+When `specPath` is empty, write `_docs/specs/product.md` as a pointer to Beamz knowledge for the project slug. The spec itself stays in Beamz (`https://api.beamz.dev/mcp/beamz`, server key = project slug). Do not invent one.
 
 ## Port map (template baseline N = 8000)
 
