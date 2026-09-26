@@ -134,6 +134,8 @@ git submodule update --init --recursive
 
 `_thunderstorm` is a git submodule. An empty `_thunderstorm/` cannot compile. Do not run BAI until `ls _thunderstorm/e2e-harness/__package.json` (or any other package `__package.json`) succeeds.
 
+The template pointer tracks thunderstorm `origin/main`. BAI is the latest published `@nu-art/build-and-install`. `version-thunderstorm.json` must name that version (`npm view @nu-art/build-and-install version`). Do not pin an older BAI, and do not leave the pointer behind `main`.
+
 Optional: `cd _thunderstorm && git fetch && git checkout <thunderstormCheckout> && cd ..` then commit the submodule pointer if you changed it.
 
 ## Step 3 — Point git at the new remote
@@ -174,34 +176,44 @@ Regenerate workspace metadata with BAI after edits (see Step 9).
 
 The template already has `local` / `dev` / `staging` / `prod` on the backend and the Vite app. Do not add a fifth env or a second config file.
 
-- Write `firebaseProjectIds.local` as a literal on the backend and frontend `local.projectId`, and in the local `ns=` hostname. Published BAI 0.500.6 does not substitute `templateParams.params` during prepare, so `{{FIREBASE_PROJECT_LOCAL}}` fails with `Missing template param`.
-- Keep the same id in `bai-config.json` `templateParams.params` so the checklist matches the literals.
+BAI reads literals. `bai-config.json` `templateParams.params` is a mirror: update it in the same edit, and do not expect `{{PARAM}}` to be substituted.
+
+- Write `firebaseProjectIds.local` as a literal on the backend and frontend `local.projectId`, and in the local `ns=` hostname. Copy the same id into `FIREBASE_PROJECT_LOCAL`.
 - Replace `replace-dev`, `replace-staging`, and `replace-prod` (project ids and the matching `*-default-rtdb` hostnames) with the ids the user supplied. Leave a `replace-*` placeholder only when the user did not give that env.
-- Write `ARTIFACT_PROJECT_ID` and `ARTIFACT_REGION` as literals on `containerDeployment` and `hostingDeployment`. Keep the same values in `templateParams.params`. Set `imageName` and `packageName` from the project slug (`<slug>-backend`, `<slug>-frontend`). Repository names `web-apps` and `hosting-builds` stay unless the user says otherwise.
+- Write the artifact project and region as literals on `containerDeployment` and `hostingDeployment`. Copy them into `ARTIFACT_PROJECT_ID` and `ARTIFACT_REGION`. Set `imageName` and `packageName` from the project slug (`<slug>-backend`, `<slug>-frontend`). Repository names `web-apps` and `hosting-builds` stay unless the user says otherwise.
+
+## Step 6b — Create GCP projects only when the user asks
+
+The skill does not create projects unless the user asks. When they do:
+
+- Project id and display name are each at most 30 characters. Shorten the display name before the API call (`"Business Identity Syncer staging"` is 34 and is rejected).
+- Under the nu-art org (`1056158311235`, `nu-art-software.com`), link staging and prod to billing account `012B92-EB17B2-394827` (Firebase Payment). Leave the `*-local` project unbilled.
+- If the user `gcloud` token cannot refresh, call the APIs with application-default credentials. Do not run `gcloud config set`.
+
+```bash
+export CLOUDSDK_AUTH_ACCESS_TOKEN="$(gcloud auth application-default print-access-token)"
+export CLOUDSDK_CORE_DISABLE_PROMPTS=1
+```
 
 ## Step 7 — Ports
 
-Human ports are **one object**: `bai-config.json` → `templateParams.params`.
+BAI reads these literals: backend `debugPort`, `basePort`, and `mongo.port`; frontend `servingPort` and the config URL; the listen fallback in `app/backend/src/main/index.ts`; the e2e constants file. `mongo` is `port` plus optional `dbName`. Do not add `dataDir`.
 
-| Param | Formula | Sample default |
-|-------|---------|----------------|
-| `PORT_BACKEND_DEBUG` | N | 8000 |
-| `PORT_FRONTEND` | N + 1 | 8001 |
-| `PORT_BACKEND_APEX` | N + 2 | 8002 |
-| `PORT_CONFIG` | N + 4 | 8004 |
-| `PORT_MONGO` | host mongo for `bai -l` | 27018 |
+`bai-config.json` `templateParams.params` must carry the same numbers. Published BAI 0.500.6 does not substitute them. `{{APP_VERSION}}` still works; it comes from `templateParams.packageJson`.
 
-If the user’s `port` differs, change those five numbers in `bai-config.json`, then write the same literals in the app `__package.json` files: backend `debugPort`, `basePort`, and `mongo.port` (only `port` and optional `dbName` — do not add `dataDir`), frontend `servingPort`, and the config URL port. Published BAI 0.500.6 does not substitute `templateParams.params` into `unitConfig`. Any `{{PORT_*}}`, `{{FIREBASE_*}}`, or `{{ARTIFACT_*}}` fails prepare or validation. `{{APP_VERSION}}` still works; it comes from `templateParams.packageJson`.
+Base port is N. Do not invent offsets.
 
-Also set the listen fallback in `app/backend/src/main/index.ts` to the same **N+2** when you change `PORT_BACKEND_APEX`.
+| Value | Formula | Sample (N = 8000) |
+|-------|---------|-------------------|
+| `PORT_BACKEND_DEBUG` / `debugPort` | N | 8000 |
+| `PORT_FRONTEND` / `servingPort` | N + 1 | 8001 |
+| `PORT_BACKEND_APEX` / `basePort` / listen fallback | N + 2 | 8002 |
+| `PORT_CONFIG` (inside the local config URL) | N + 4 | 8004 |
+| `PORT_MONGO` / `mongo.port` | 20000 + N | 28000 |
+| E2E backend | N + 102 | 8102 |
+| E2E mongo | 20000 + N + 21 | 28021 |
 
-Keep **`app/e2e`**. It is a product consumer of `@nu-art/e2e-harness`. Do not add `app/e2e-harness` or a second stack. Retarget only `app/e2e/src/test/sample-e2e-harness-constants.ts`:
-
-| Constant | Sample default | After port remap |
-|----------|----------------|------------------|
-| E2E backend (`SAMPLE_E2E_BACKEND_PORT`) | 8102 | a free port, typically **N+102** |
-| E2E mongo (`SAMPLE_E2E_MONGO_PORT`) | 27039 | keep or pick an unused host port, not `PORT_MONGO` |
-| E2E Firebase project id | `demo-project` | `firebaseProjectIds.local` |
+Keep **`app/e2e`**. It is a product consumer of `@nu-art/e2e-harness`. Do not add `app/e2e-harness` or a second stack. Retarget only `app/e2e/src/test/sample-e2e-harness-constants.ts` using the formulas above (backend **N+102**, mongo **20000+N+21**, Firebase project id = `firebaseProjectIds.local`).
 
 Rename the `sample-e2e-*` filenames, the `SAMPLE_E2E_*` constants, and the mongo container name `mongo-emu-sample-e2e-harness` to the project slug. Do not leave the word `sample` in the e2e package.
 
@@ -273,6 +285,16 @@ The sample’s `build-and-install.sh` injects `--ts-version` from `version-thund
 
 Never use raw `pnpm install` / `pnpm run build` as the primary workflow — BAI owns the lifecycle.
 
+### Preflight (once BAI is installed)
+
+`build-and-install.sh` runs `node scripts/preflight-unit-config.mjs` before later BAI commands. The first `init` on a fresh clone skips it, because `node_modules` does not exist yet. After that, the script checks every `__package.json` `unitConfig` against the **installed** `@nu-art/build-and-install`, and checks that the port formulas and the `bai-config.json` mirror match the literals.
+
+If `init` fails on `unitConfig` or `Missing template param`:
+
+1. Run `node scripts/preflight-unit-config.mjs`.
+2. Diff the installed `UnitMapper_*.js` validator with the matching file under `_thunderstorm`.
+3. Change the template to satisfy the installed package. Do not rewrite this skill from the first error line. The submodule can accept `mongo.dataDir` and `{{PARAM}}` while published 0.500.6 rejects both.
+
 ### Verify BAI is 0.500.x (mandatory)
 
 After init (and after any later `bai -i`):
@@ -325,12 +347,12 @@ Commit with a clear message (e.g. `bootstrap: <projectName> from thunderstorm-sa
 
 - **Clone first** — boilerplate lives in `thunderstorm-sample`; the skill customizes, it does not recreate the tree file-by-file.
 - **Init the `_thunderstorm` submodule** before any BAI command (`git clone --recurse-submodules` or `git submodule update --init --recursive`).
-- **Pin Thunderstorm 0.500.x** — SSOT is `version-thunderstorm.json` (and `bai-config.json` `THUNDERSTORM_VERSION`). The sample `build-and-install.sh` injects `--ts-version` from that file. **Verify** `node_modules/@nu-art/build-and-install` is 0.500.x after init. If it is 0.401.x, use the `--ts-version=<pin>` / `TS_VERSION=<pin>` hack and re-init. Upstream BAI still defaults to `~0.401.0`.
+- **Pin Thunderstorm to latest** — BAI version is `version-thunderstorm.json` (and `bai-config.json` `THUNDERSTORM_VERSION`), and it must match `npm view @nu-art/build-and-install version`. The `_thunderstorm` pointer tracks `origin/main`. The sample `build-and-install.sh` injects `--ts-version` from that file. **Verify** `node_modules/@nu-art/build-and-install` matches the pin after init. If it is 0.401.x, you bypassed the project wrapper. Re-init with `--ts-version=<pin>`.
 - **Docker must be running** before `bai -l` or product e2e. **`GCP_PROJECT_ID`** must be a real GCP project before password-auth / JWT.
 - **Never edit BAI-generated** `package.json` / `pnpm-workspace.yaml` — only `__package.json` templates and source; run BAI to regenerate.
 - **Never subset-install** — `bai -i -up=<subset>` rewrites a broken workspace file. Full `init` / `bai -i -nb` only.
 - **Keep `@app/e2e`** — retarget the constants file and rename `sample-e2e-*` to the project slug. Do not add another `@app/e2e-harness` copy (use `@nu-art/e2e-harness`). Do not add Jest or Vitest. Firebase tests are `*.test.firebase.ts` via `stormTester`; Playwright tests are `*.test.playwright.ts`.
-- **Ports and project ids:** keep the names in `bai-config.json` `templateParams.params`, and write the same values as literals in app `__package.json` `unitConfig`. Published BAI 0.500.6 does not substitute `templateParams.params`. `mongo` is `port` plus optional `dbName` only.
+- **Ports and project ids:** BAI reads literals in the app `__package.json` files, `app/backend/src/main/index.ts`, and the e2e constants. Mirror those values in `bai-config.json` `templateParams.params`. Formulas, with base N: debug N, frontend N+1, backend N+2, config N+4, mongo `20000+N`, e2e backend N+102, e2e mongo `20000+N+21`. Published BAI 0.500.6 does not substitute `templateParams.params`. `mongo` is `port` plus optional `dbName` only. `node scripts/preflight-unit-config.mjs` enforces this against the installed package.
 - **Beamz MCP:** replace `<project-name>` in `.cursor/mcp.json` with the project slug. Leave `https://api.beamz.dev/mcp/beamz`. The product spec lives in that Beamz knowledge project. Without `specPath`, write only a pointer at `_docs/specs/product.md`.
 - **Do not rewrite `deploy.sh` or `deploy_rtdb_deltas.py`.** Retarget `DEFAULT_UNITS` / image names / `replace-*` project ids only. Config deltas are `releases/<semver>.json`. Prod stays behind `DEPLOY_CONFIRM_PROD=yes`.
 - **`?` and `{{APP_VERSION}}`** — keep template conventions; versions resolve via `bai-config.json` (include `"mongodb": "^7.1.1"`, and `"konva"` / `"react-konva"` when the Thunderstorm revision includes `@nu-art/konva-chart`).

@@ -10,21 +10,21 @@ When `specPath` is empty, write `_docs/specs/product.md` as a pointer to Beamz k
 
 ## Port map (template baseline N = 8000)
 
-Set the names in `bai-config.json` → `templateParams.params`, then write the same values as literals in app `__package.json` `unitConfig` (ports, local Firebase id, artifact project, artifact region, and the config URL). Published BAI 0.500.6 does not substitute `templateParams.params`. `mongo` is `port` and optional `dbName` only — do not add `dataDir`.
+BAI reads literals in the app `__package.json` files, the backend listen fallback, and `app/e2e/src/test/sample-e2e-harness-constants.ts`. `bai-config.json` → `templateParams.params` mirrors those values and is not substituted. `mongo` is `port` and optional `dbName` only — do not add `dataDir`.
 
-| Param | Formula | Default |
-|-------|---------|---------|
-| `PORT_BACKEND_DEBUG` | N | 8000 |
-| `PORT_FRONTEND` | N + 1 | 8001 |
-| `PORT_BACKEND_APEX` | N + 2 | 8002 |
-| `PORT_CONFIG` | N + 4 | 8004 |
-| `PORT_MONGO` | human mongo (`bai -l`) | 27018 |
+| Value | Formula | Sample |
+|-------|---------|--------|
+| debug / `PORT_BACKEND_DEBUG` | N | 8000 |
+| frontend / `PORT_FRONTEND` | N + 1 | 8001 |
+| backend / `PORT_BACKEND_APEX` | N + 2 | 8002 |
+| config URL / `PORT_CONFIG` | N + 4 | 8004 |
+| mongo / `PORT_MONGO` | 20000 + N | 28000 |
+| E2E backend | N + 102 | 8102 |
+| E2E mongo | 20000 + N + 21 | 28021 |
 
-Also set the listen fallback in `app/backend/src/main/index.ts` to N+2.
+`FIREBASE_PROJECT_LOCAL`, `ARTIFACT_PROJECT_ID`, and `ARTIFACT_REGION` are the same kind of mirror. Live env ids are the `replace-dev` / `replace-staging` / `replace-prod` strings in the app `__package.json` files.
 
-`FIREBASE_PROJECT_LOCAL`, `ARTIFACT_PROJECT_ID`, and `ARTIFACT_REGION` live in that params object and as matching literals in the app `__package.json` files. Live env ids are the `replace-dev` / `replace-staging` / `replace-prod` strings in those same files.
-
-`app/e2e` uses a **dedicated** backend/mongo zone (sample defaults **8102** / **27039**) so mocha does not collide with human `bai -l` on N+2. Retarget `app/e2e/src/test/sample-e2e-harness-constants.ts` only, then rename `sample-e2e-*` to the project slug.
+`node scripts/preflight-unit-config.mjs` checks the literals, the formulas, and the mirror against the installed `@nu-art/build-and-install`. Retarget the e2e constants file only, then rename `sample-e2e-*` to the project slug.
 
 ## Deploy (already in the clone)
 
