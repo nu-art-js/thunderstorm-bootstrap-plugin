@@ -15,7 +15,7 @@ It does **not** recreate the monorepo file-by-file — that stays in sync with t
 
 ## Installation
 
-Install from the [Cursor Marketplace](https://cursor.com/marketplace), or clone this repo and install the plugin from disk.
+Install from the [Cursor Marketplace](https://cursor.com/marketplace), clone this repo and install the plugin from disk, or hand [`agent-install.md`](agent-install.md) to an agent. That file tells the agent to symlink the skill into `~/.cursor/skills/` on the machine it is running on.
 
 ## Usage
 
