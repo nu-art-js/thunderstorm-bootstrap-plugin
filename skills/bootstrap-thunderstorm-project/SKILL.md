@@ -153,6 +153,14 @@ In root `__package.json`:
 
 Regenerate workspace metadata with BAI after edits (see Step 9).
 
+## Step 5b — Beamz MCP project
+
+`.cursor/mcp.json` is already in the clone. The server key is how Beamz knows which project this checkout is.
+
+- Replace `<project-name>` with the project slug.
+- Leave the URL `https://api.beamz.dev/mcp/beamz`.
+- Do not point it at a local host, and do not add other MCP servers during bootstrap.
+
 ## Step 6 — Firebase project IDs and RTDB config URL
 
 The template already has `local` / `dev` / `staging` / `prod` on the backend and the Vite app. Do not add a fifth env or a second config file.
@@ -313,6 +321,7 @@ Commit with a clear message (e.g. `bootstrap: <projectName> from thunderstorm-sa
 - **Never subset-install** — `bai -i -up=<subset>` rewrites a broken workspace file. Full `init` / `bai -i -nb` only.
 - **Keep `@app/e2e`** — retarget the constants file and rename `sample-e2e-*` to the project slug. Do not add another `@app/e2e-harness` copy (use `@nu-art/e2e-harness`). Do not add Jest or Vitest. Firebase tests are `*.test.firebase.ts` via `stormTester`; Playwright tests are `*.test.playwright.ts`.
 - **Ports live in `bai-config.json` `templateParams.params`.** Do not hardcode `8000`–`8004` into `__package.json`.
+- **Beamz MCP:** replace `<project-name>` in `.cursor/mcp.json` with the project slug. Leave `https://api.beamz.dev/mcp/beamz`.
 - **Do not rewrite `deploy.sh` or `deploy_rtdb_deltas.py`.** Retarget `DEFAULT_UNITS` / image names / `replace-*` project ids only. Config deltas are `releases/<semver>.json`. Prod stays behind `DEPLOY_CONFIRM_PROD=yes`.
 - **`?` and `{{APP_VERSION}}`** — keep template conventions; versions resolve via `bai-config.json` (include `"mongodb": "^7.1.1"`, and `"konva"` / `"react-konva"` when the Thunderstorm revision includes `@nu-art/konva-chart`).
 - **Vite is the only app frontend** — do not add a webpack `app/frontend` tree.
