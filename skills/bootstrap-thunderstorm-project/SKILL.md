@@ -229,9 +229,11 @@ Run this skill's `create-staging-deploy-sa.sh` from the **product** repo (the sc
 bash ~/.cursor/skills/bootstrap-thunderstorm-project/create-staging-deploy-sa.sh <slug> <staging-project-id>
 ```
 
-It writes `$HOME/.config/gcloud/<slug>-staging-deploy.json` and refuses if that path is inside the product worktree. Never `cat` the file. Do **not** copy the script into the new repo — the next skill update would never reach old clones. Put `*-staging-deploy.json` in the product `.gitignore`. Cursor secret is optional for cloud agents.
+It writes `$HOME/.config/gcloud/<slug>-staging-deploy.json` and refuses if that path is inside the product worktree. Never `cat` the file. Do **not** copy the script into the new repo — the next skill update would never reach old clones. Put `*-staging-deploy.json` in the product `.gitignore`.
 
-Do not copy a Cloud Dockerfile / bootstrap.sh from the sample into the product. If they need `cpio`/`rsync` on a Cloud agent, add those packages to **that product's existing** install hook, or `apt-get install` once. Host-tool lists belong here so they can change without freezing a Dockerfile in every app.
+Cloud Agents do not inherit the laptop's SDK or ADC. For a product that already has a Cloud install hook, add `google-cloud-cli` there (Google's apt repo). Do not copy a Dockerfile from the sample. The human must add a Cursor secret named **`<SLUG>_STAGING_DEPLOY_SA_JSON`** (hyphens → underscores, upper case; Identity: `IDENTITY_SYNCER_STAGING_DEPLOY_SA_JSON`) with the key file contents, not a path. Do not invent a second generic secret name. `deploy.sh` reads that env and `gcloud auth activate-service-account`. Local Docker is not required; Cloud Build builds the image.
+
+Do not copy a Cloud Dockerfile / bootstrap.sh from the sample into the product. If they need `cpio`/`rsync`/`google-cloud-cli` on a Cloud agent, add those packages to **that product's existing** install hook. Host-tool lists belong here so they can change without freezing a Dockerfile in every app.
 
 ## Step 7 — Ports
 
