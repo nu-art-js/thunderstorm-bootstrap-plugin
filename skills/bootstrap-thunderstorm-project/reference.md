@@ -12,7 +12,7 @@ When `specPath` is empty, write `_docs/specs/product.md` as a pointer to Beamz k
 
 Suggest creating `local`, `staging`, and `prod` in the parameter question. The first option is yes. Propose ids `nu-art-<short>-local|staging|prod`, each at most 30 characters, and show them before creating anything. Org `1056158311235`. Bill staging and prod to `012B92-EB17B2-394827`. Leave local unbilled.
 
-Also suggest a staging-only deploy SA in `nu-art-dev-ops`. Create it with `bash scripts/create-staging-deploy-sa.sh`. **Do not put the JSON in the repo** — the script writes under `$HOME/.config/gcloud`. `gcloud builds submit` needs `roles/storage.admin` on `gs://nu-art-dev-ops_cloudbuild` and `roles/serviceusage.serviceUsageConsumer` on `nu-art-dev-ops`. Cloud Build runtime SA is `PROJECT_NUMBER-compute@developer.gserviceaccount.com`.
+Also suggest a staging-only deploy SA in `nu-art-dev-ops`. Run **this skill's** `create-staging-deploy-sa.sh` from the product root. **Do not copy the script into the product.** The JSON goes under `$HOME/.config/gcloud`. `gcloud builds submit` needs `roles/storage.admin` on `gs://nu-art-dev-ops_cloudbuild` and `roles/serviceusage.serviceUsageConsumer` on `nu-art-dev-ops`. Cloud Build runtime SA is `PROJECT_NUMBER-compute@developer.gserviceaccount.com`.
 
 ## Port map (template baseline N = 8000)
 

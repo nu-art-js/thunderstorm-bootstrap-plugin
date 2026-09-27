@@ -223,7 +223,15 @@ On staging: `run.developer`, `firebasehosting.admin`, `firebasedatabase.admin`, 
 
 Robots: Cloud Build runtime SA writer on `web-apps`; staging Cloud Run agent reader on `web-apps`.
 
-Run `bash scripts/create-staging-deploy-sa.sh <slug> <staging-project-id>` from the new repo. It writes the JSON key to `$HOME/.config/gcloud/<slug>-staging-deploy.json` and **refuses if that path is inside the git worktree**. Never `cat` the file into chat. `.gitignore` already blocks `*-staging-deploy.json`. Put the key in a Cursor secret from that home path if a cloud agent needs it.
+Run this skill's `create-staging-deploy-sa.sh` from the **product** repo (the script lives next to this SKILL.md, not in the clone):
+
+```bash
+bash ~/.cursor/skills/bootstrap-thunderstorm-project/create-staging-deploy-sa.sh <slug> <staging-project-id>
+```
+
+It writes `$HOME/.config/gcloud/<slug>-staging-deploy.json` and refuses if that path is inside the product worktree. Never `cat` the file. Do **not** copy the script into the new repo — the next skill update would never reach old clones. Put `*-staging-deploy.json` in the product `.gitignore`. Cursor secret is optional for cloud agents.
+
+Do not copy a Cloud Dockerfile / bootstrap.sh from the sample into the product. If they need `cpio`/`rsync` on a Cloud agent, add those packages to **that product's existing** install hook, or `apt-get install` once. Host-tool lists belong here so they can change without freezing a Dockerfile in every app.
 
 ## Step 7 — Ports
 
