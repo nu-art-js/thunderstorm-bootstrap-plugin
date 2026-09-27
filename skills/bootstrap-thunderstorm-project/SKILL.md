@@ -29,7 +29,8 @@ After clone, read `_thunderstorm/.rules/operational/bai-cli.mdc` and `_thunderst
 | `templateRepoUrl` | Default: `git@github.com:nu-art-js/thunderstorm-sample.git` |
 | `thunderstormCheckout` | Optional: tag or branch for `_thunderstorm` after clone (default: keep template’s submodule pointer) |
 | `author`, `license` | For `__package.json` / package metadata where applicable |
-| `firebaseProjectIds` | At least `local`; add `dev` / `staging` / `prod` if needed |
+| `firebaseProjectIds` | Suggest `local`, `staging`, and `prod`. Do not add `dev` unless they pick it. Propose ids in the question (see step 6b). |
+| `createGcpProjects` | **Suggest yes.** First option: create those projects under the nu-art org and enable Firebase. Show the exact ids and display names. |
 | `port` | Integer **N** — base for local ports (see [reference.md](reference.md)) |
 | `keepFrontend` | Default true. Template frontend is **Vite only** (`app/frontend-vite`). If false (headless), delete that tree. |
 | `initialPackages` | e.g. `["messaging/shared","messaging/backend","messaging/frontend"]` — new capability folders |
@@ -182,18 +183,47 @@ BAI reads literals. `bai-config.json` `templateParams.params` is a mirror: updat
 - Replace `replace-dev`, `replace-staging`, and `replace-prod` (project ids and the matching `*-default-rtdb` hostnames) with the ids the user supplied. Leave a `replace-*` placeholder only when the user did not give that env.
 - Write the artifact project and region as literals on `containerDeployment` and `hostingDeployment`. Copy them into `ARTIFACT_PROJECT_ID` and `ARTIFACT_REGION`. Set `imageName` and `packageName` from the project slug (`<slug>-backend`, `<slug>-frontend`). Repository names `web-apps` and `hosting-builds` stay unless the user says otherwise.
 
-## Step 6b — Create GCP projects only when the user asks
+## Step 6b — Suggest GCP projects, then create them
 
-The skill does not create projects unless the user asks. When they do:
+In the step 1 question, suggest creating the projects. The first option is yes. Show the exact ids and display names. Default envs are `local`, `staging`, and `prod`. Do not add `dev` unless they pick it.
 
-- Project id and display name are each at most 30 characters. Shorten the display name before the API call (`"Business Identity Syncer staging"` is 34 and is rejected).
-- Under the nu-art org (`1056158311235`, `nu-art-software.com`), link staging and prod to billing account `012B92-EB17B2-394827` (Firebase Payment). Leave the `*-local` project unbilled.
+Ids and display names are each at most 30 characters. Propose `nu-art-<short>-local`, `nu-art-<short>-staging`, and `nu-art-<short>-prod`. If the project name does not fit, shorten it in the question before they answer. `"Business Identity Syncer staging"` is 34 characters and is rejected.
+
+If they accept:
+
+- Create the projects under the nu-art org (`1056158311235`, `nu-art-software.com`) and enable Firebase on each.
+- Link staging and prod to billing account `012B92-EB17B2-394827` (Firebase Payment). Leave the `*-local` project unbilled.
+- Write those ids into the app `__package.json` files. Do not leave `replace-*` for an env you created.
 - If the user `gcloud` token cannot refresh, call the APIs with application-default credentials. Do not run `gcloud config set`.
 
 ```bash
 export CLOUDSDK_AUTH_ACCESS_TOKEN="$(gcloud auth application-default print-access-token)"
 export CLOUDSDK_CORE_DISABLE_PROMPTS=1
 ```
+
+If they decline, leave `replace-*` only for envs they did not supply.
+
+## Step 6c — Suggest a staging deploy service account
+
+In the same parameter round, suggest creating a **staging-only** deploy SA in `nu-art-dev-ops`. First option is yes. The account and its JSON key stay in GCP and in a Cursor secret. **Never commit a key, never paste JSON into the repo, chat, or Beamz.**
+
+Name: `<slug>-staging-deploy@nu-art-dev-ops.iam.gserviceaccount.com`. No Owner, Editor, or prod.
+
+Enable on `nu-art-dev-ops`: `cloudbuild.googleapis.com`, `artifactregistry.googleapis.com`, `cloudresourcemanager.googleapis.com`. Enable on the staging project: `run`, `firebase`, `firebasehosting`, `firebasedatabase`. Confirm `web-apps` and `hosting-builds` already exist; do not create them with this SA.
+
+Grants that `gcloud builds submit` actually needs:
+
+- `roles/serviceusage.serviceUsageConsumer` on `nu-art-dev-ops`
+- `roles/cloudbuild.builds.editor` on `nu-art-dev-ops`
+- **`roles/storage.admin` on `gs://nu-art-dev-ops_cloudbuild`** — editor plus `storage.objectAdmin` is not enough
+- `roles/artifactregistry.writer` on `web-apps` and `hosting-builds` only
+- `roles/iam.serviceAccountUser` on the Cloud Build **runtime** SA: `PROJECT_NUMBER-compute@developer.gserviceaccount.com` (the legacy `PROJECT_NUMBER@cloudbuild.gserviceaccount.com` often does not exist)
+
+On staging: `run.developer`, `firebasehosting.admin`, `firebasedatabase.admin`, `serviceUsageConsumer`, `serviceAccountUser` on the default compute SA.
+
+Robots: Cloud Build runtime SA writer on `web-apps`; staging Cloud Run agent reader on `web-apps`.
+
+Run `bash scripts/create-staging-deploy-sa.sh <slug> <staging-project-id>` from the new repo. It writes the JSON key to `$HOME/.config/gcloud/<slug>-staging-deploy.json` and **refuses if that path is inside the git worktree**. Never `cat` the file into chat. `.gitignore` already blocks `*-staging-deploy.json`. Put the key in a Cursor secret from that home path if a cloud agent needs it.
 
 ## Step 7 — Ports
 
@@ -323,6 +353,17 @@ docker info   # must succeed; if not, start Docker Desktop and retry
 
 Do not treat emulator/mongo failures as app bugs until Docker is up.
 
+### Host tools: `cpio` and `rsync`
+
+BAI shells out to both. `cpio` copies SCSS and other assets into each package `dist`. `rsync` copies dependency output into the backend container tree. Install them on every machine and cloud image before the first build:
+
+```bash
+# Debian/Ubuntu, including Cursor Cloud `/workspace`
+apt-get install -y cpio rsync
+```
+
+macOS already ships both. A missing `cpio` is hidden: the copy command drops stderr. `dist` then has no `index.scss`, and the Vite failure looks like a bad `@nu-art/ts-styles` package entry.
+
 ### GCP / JWT (required to register/login)
 
 Session JWT uses Secret Manager. Before launch or e2e:
@@ -349,6 +390,7 @@ Commit with a clear message (e.g. `bootstrap: <projectName> from thunderstorm-sa
 - **Init the `_thunderstorm` submodule** before any BAI command (`git clone --recurse-submodules` or `git submodule update --init --recursive`).
 - **Pin Thunderstorm to latest** — BAI version is `version-thunderstorm.json` (and `bai-config.json` `THUNDERSTORM_VERSION`), and it must match `npm view @nu-art/build-and-install version`. The `_thunderstorm` pointer tracks `origin/main`. The sample `build-and-install.sh` injects `--ts-version` from that file. **Verify** `node_modules/@nu-art/build-and-install` matches the pin after init. If it is 0.401.x, you bypassed the project wrapper. Re-init with `--ts-version=<pin>`.
 - **Docker must be running** before `bai -l` or product e2e. **`GCP_PROJECT_ID`** must be a real GCP project before password-auth / JWT.
+- **Host tools:** install `cpio` and `rsync` before BAI. `cpio` copies assets into `dist`. `rsync` copies dependency output for the backend image. A missing `cpio` fails silently and the Vite build then cannot resolve `@nu-art/ts-styles`.
 - **Never edit BAI-generated** `package.json` / `pnpm-workspace.yaml` — only `__package.json` templates and source; run BAI to regenerate.
 - **Never subset-install** — `bai -i -up=<subset>` rewrites a broken workspace file. Full `init` / `bai -i -nb` only.
 - **Keep `@app/e2e`** — retarget the constants file and rename `sample-e2e-*` to the project slug. Do not add another `@app/e2e-harness` copy (use `@nu-art/e2e-harness`). Do not add Jest or Vitest. Firebase tests are `*.test.firebase.ts` via `stormTester`; Playwright tests are `*.test.playwright.ts`.

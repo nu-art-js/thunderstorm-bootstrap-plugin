@@ -8,6 +8,12 @@ When the user gives `specPath` (a local markdown file), read it with the Read to
 
 When `specPath` is empty, write `_docs/specs/product.md` as a pointer to Beamz knowledge for the project slug. The spec itself stays in Beamz (`https://api.beamz.dev/mcp/beamz`, server key = project slug). Do not invent one.
 
+## GCP projects
+
+Suggest creating `local`, `staging`, and `prod` in the parameter question. The first option is yes. Propose ids `nu-art-<short>-local|staging|prod`, each at most 30 characters, and show them before creating anything. Org `1056158311235`. Bill staging and prod to `012B92-EB17B2-394827`. Leave local unbilled.
+
+Also suggest a staging-only deploy SA in `nu-art-dev-ops`. Create it with `bash scripts/create-staging-deploy-sa.sh`. **Do not put the JSON in the repo** — the script writes under `$HOME/.config/gcloud`. `gcloud builds submit` needs `roles/storage.admin` on `gs://nu-art-dev-ops_cloudbuild` and `roles/serviceusage.serviceUsageConsumer` on `nu-art-dev-ops`. Cloud Build runtime SA is `PROJECT_NUMBER-compute@developer.gserviceaccount.com`.
+
 ## Port map (template baseline N = 8000)
 
 BAI reads literals in the app `__package.json` files, the backend listen fallback, and `app/e2e/src/test/sample-e2e-harness-constants.ts`. `bai-config.json` → `templateParams.params` mirrors those values and is not substituted. `mongo` is `port` and optional `dbName` only — do not add `dataDir`.
