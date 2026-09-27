@@ -231,9 +231,13 @@ bash ~/.cursor/skills/bootstrap-thunderstorm-project/create-staging-deploy-sa.sh
 
 It writes `$HOME/.config/gcloud/<slug>-staging-deploy.json` and refuses if that path is inside the product worktree. Never `cat` the file. Do **not** copy the script into the new repo — the next skill update would never reach old clones. Put `*-staging-deploy.json` in the product `.gitignore`.
 
-Cloud Agents do not inherit the laptop's SDK or ADC. For a product that already has a Cloud install/start hook: init `_thunderstorm` in **start** (`git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive`) so the agent does not clone it mid-prompt; in **install** put host tools (`cpio`, `rsync`), the Cloud SDK (`$HOME/google-cloud-sdk`), and `docker.io`. Start the docker daemon in **start** (`service docker start`) — the snapshot does not keep it running. **Never** run `build-and-install.sh init` in `install` — it OOMs the Cloud Build. Agents run BAI when they actually need it. Do not copy a Dockerfile from the sample. The human must add a Cursor secret named **`<SLUG>_STAGING_DEPLOY_SA_JSON`** (hyphens → underscores, upper case; Identity: `IDENTITY_SYNCER_STAGING_DEPLOY_SA_JSON`) with the key file contents, not a path. Do not invent a second generic secret name. `deploy.sh` reads that env and `gcloud auth activate-service-account`. Local Docker is not required for `deploy.sh` (Cloud Build builds the image); Cloud Agents still need Docker for `bai -l` / e2e.
+The sample ships `.cursor/environment.json`, `cloud-install.sh`, and `cloud-start.sh`. **Keep them on clone.** Do not add a Dockerfile.
 
-Do not copy a Cloud Dockerfile / bootstrap.sh from the sample into the product. If they need `cpio`/`rsync`/`google-cloud-cli` on a Cloud agent, add those packages to **that product's existing** install hook. Host-tool lists belong here so they can change without freezing a Dockerfile in every app.
+Install: `cpio`, `rsync`, gcloud (`$HOME/google-cloud-sdk`), `docker.io`, submodule init. **Never** run `build-and-install.sh init` in install — it OOMs the Cloud Build. Agents run BAI when they need it.
+
+Start: `service docker start`, submodule init (`git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive`), ADC from **`<SLUG>_STAGING_DEPLOY_SA_JSON`** (hyphens → underscores, upper case; Identity: `IDENTITY_SYNCER_STAGING_DEPLOY_SA_JSON`). Value is the key file contents, not a path. Do not invent a second secret name. `deploy.sh` reads that env. Local Docker is not required for `deploy.sh`; Cloud Agents still need Docker for `bai -l` / e2e.
+
+The SA **create** script stays in this skill. Do not copy it into the product.
 
 ## Step 7 — Ports
 
