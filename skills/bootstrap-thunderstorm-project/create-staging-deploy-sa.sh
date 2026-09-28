@@ -58,11 +58,14 @@ if ! gcloud iam service-accounts describe "$SA_EMAIL" --project="$DEVOPS_PROJECT
 fi
 
 gcloud projects add-iam-policy-binding "$DEVOPS_PROJECT" --member="serviceAccount:${SA_EMAIL}" --role="roles/cloudbuild.builds.editor" --condition=None >/dev/null
+gcloud projects add-iam-policy-binding "$DEVOPS_PROJECT" --member="serviceAccount:${SA_EMAIL}" --role="roles/cloudbuild.builds.builder" --condition=None >/dev/null
 gcloud projects add-iam-policy-binding "$DEVOPS_PROJECT" --member="serviceAccount:${SA_EMAIL}" --role="roles/serviceusage.serviceUsageConsumer" --condition=None >/dev/null
 gcloud iam service-accounts add-iam-policy-binding "$CB_RUNTIME" --project="$DEVOPS_PROJECT" --member="serviceAccount:${SA_EMAIL}" --role="roles/iam.serviceAccountUser" >/dev/null
 gcloud artifacts repositories add-iam-policy-binding web-apps --project="$DEVOPS_PROJECT" --location=us-central1 --member="serviceAccount:${SA_EMAIL}" --role="roles/artifactregistry.writer" >/dev/null
 gcloud artifacts repositories add-iam-policy-binding hosting-builds --project="$DEVOPS_PROJECT" --location=us-central1 --member="serviceAccount:${SA_EMAIL}" --role="roles/artifactregistry.writer" >/dev/null
 gcloud storage buckets add-iam-policy-binding "gs://${DEVOPS_PROJECT}_cloudbuild" --member="serviceAccount:${SA_EMAIL}" --role="roles/storage.admin" >/dev/null
+# Runtime SA must read the source bucket after submit. Editor on the deploy SA is not enough.
+gcloud storage buckets add-iam-policy-binding "gs://${DEVOPS_PROJECT}_cloudbuild" --member="serviceAccount:${CB_RUNTIME}" --role="roles/storage.admin" >/dev/null
 gcloud artifacts repositories add-iam-policy-binding web-apps --project="$DEVOPS_PROJECT" --location=us-central1 --member="serviceAccount:${CB_RUNTIME}" --role="roles/artifactregistry.writer" >/dev/null
 gcloud artifacts repositories add-iam-policy-binding web-apps --project="$DEVOPS_PROJECT" --location=us-central1 --member="serviceAccount:${RUN_AGENT}" --role="roles/artifactregistry.reader" >/dev/null
 
