@@ -209,7 +209,7 @@ In the same parameter round, suggest creating a **staging-only** deploy SA in `n
 
 Name: `<slug>-staging-deploy@nu-art-dev-ops.iam.gserviceaccount.com`. No Owner, Editor, or prod.
 
-Enable on `nu-art-dev-ops`: `cloudbuild.googleapis.com`, `artifactregistry.googleapis.com`, `cloudresourcemanager.googleapis.com`. Enable on the staging project: `run`, `firebase`, `firebasehosting`, `firebasedatabase`. Confirm `web-apps` and `hosting-builds` already exist; do not create them with this SA.
+Enable on `nu-art-dev-ops`: `cloudbuild.googleapis.com`, `artifactregistry.googleapis.com`, `cloudresourcemanager.googleapis.com`, `firebase.googleapis.com`, `firebasehosting.googleapis.com`, `firebasedatabase.googleapis.com`. The deploy SA lives there, so that project is the Firebase CLI quota project — Hosting 403 SERVICE_DISABLED if those APIs are off. Enable on the staging project: `run`, `firebase`, `firebasehosting`, `firebasedatabase`. Confirm `web-apps` and `hosting-builds` already exist; do not create them with this SA.
 
 Grants that `gcloud builds submit` actually needs:
 
