@@ -41,6 +41,9 @@ gcloud services enable \
   cloudbuild.googleapis.com \
   artifactregistry.googleapis.com \
   cloudresourcemanager.googleapis.com \
+  firebase.googleapis.com \
+  firebasehosting.googleapis.com \
+  firebasedatabase.googleapis.com \
   --project="$DEVOPS_PROJECT"
 gcloud services enable \
   run.googleapis.com \
