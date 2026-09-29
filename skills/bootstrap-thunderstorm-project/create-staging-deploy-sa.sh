@@ -72,7 +72,7 @@ gcloud storage buckets add-iam-policy-binding "gs://${DEVOPS_PROJECT}_cloudbuild
 gcloud artifacts repositories add-iam-policy-binding web-apps --project="$DEVOPS_PROJECT" --location=us-central1 --member="serviceAccount:${CB_RUNTIME}" --role="roles/artifactregistry.writer" >/dev/null
 gcloud artifacts repositories add-iam-policy-binding web-apps --project="$DEVOPS_PROJECT" --location=us-central1 --member="serviceAccount:${RUN_AGENT}" --role="roles/artifactregistry.reader" >/dev/null
 
-gcloud projects add-iam-policy-binding "$STAGING_PROJECT" --member="serviceAccount:${SA_EMAIL}" --role="roles/run.developer" --condition=None >/dev/null
+gcloud projects add-iam-policy-binding "$STAGING_PROJECT" --member="serviceAccount:${SA_EMAIL}" --role="roles/run.admin" --condition=None >/dev/null
 gcloud projects add-iam-policy-binding "$STAGING_PROJECT" --member="serviceAccount:${SA_EMAIL}" --role="roles/firebasehosting.admin" --condition=None >/dev/null
 gcloud projects add-iam-policy-binding "$STAGING_PROJECT" --member="serviceAccount:${SA_EMAIL}" --role="roles/firebasedatabase.admin" --condition=None >/dev/null
 gcloud projects add-iam-policy-binding "$STAGING_PROJECT" --member="serviceAccount:${SA_EMAIL}" --role="roles/serviceusage.serviceUsageConsumer" --condition=None >/dev/null

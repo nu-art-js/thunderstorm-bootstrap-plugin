@@ -219,7 +219,7 @@ Grants that `gcloud builds submit` actually needs:
 - `roles/artifactregistry.writer` on `web-apps` and `hosting-builds` only
 - `roles/iam.serviceAccountUser` on the Cloud Build **runtime** SA: `PROJECT_NUMBER-compute@developer.gserviceaccount.com` (the legacy `PROJECT_NUMBER@cloudbuild.gserviceaccount.com` often does not exist)
 
-On staging: `run.developer`, `firebasehosting.admin`, `firebasedatabase.admin`, `serviceUsageConsumer`, `serviceAccountUser` on the default compute SA.
+On staging: `run.admin` (not `run.developer` — BAI’s service yaml sets `invoker-iam-disabled`, which needs `run.services.setIamPolicy`), `firebasehosting.admin`, `firebasedatabase.admin`, `serviceUsageConsumer`, `serviceAccountUser` on the default compute SA.
 
 Robots: Cloud Build runtime SA writer on `web-apps`; staging Cloud Run agent reader on `web-apps`.
 
