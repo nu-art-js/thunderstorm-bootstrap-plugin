@@ -259,6 +259,8 @@ Base port is N. Do not invent offsets.
 
 Keep **`app/e2e`**. It is a product consumer of `@nu-art/e2e-harness`. Do not add `app/e2e-harness` or a second stack. Retarget only `app/e2e/src/test/sample-e2e-harness-constants.ts` using the formulas above (backend **N+102**, mongo **20000+N+21**, Firebase project id = `firebaseProjectIds.local`).
 
+Backend `unitConfig.runtime` is `"node"`. Storm owns the listen on `PORT`. Do not add `ModuleBE_ExpressFunction_Class` / `export const api` — that is functions-framework mode and double-binds 8080 on Cloud Run.
+
 Rename the `sample-e2e-*` filenames, the `SAMPLE_E2E_*` constants, and the mongo container name `mongo-emu-sample-e2e-harness` to the project slug. Do not leave the word `sample` in the e2e package.
 
 Also search for `localhost:8008` (storage emulator proxy in backend) only if you intentionally change storage proxy wiring — default leave as-is unless documented otherwise.
