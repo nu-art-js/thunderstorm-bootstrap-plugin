@@ -90,4 +90,5 @@ else
 fi
 
 echo "SA: $SA_EMAIL"
+echo "Cursor secret name: GCP_SA_JSON"
 echo "Do not copy that file into the product repo."

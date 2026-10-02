@@ -203,11 +203,11 @@ export CLOUDSDK_CORE_DISABLE_PROMPTS=1
 
 If they decline, leave `replace-*` only for envs they did not supply.
 
-## Step 6c — Suggest a staging deploy service account
+## Step 6c — Suggest a deploy service account
 
-In the same parameter round, suggest creating a **staging-only** deploy SA in `nu-art-dev-ops`. First option is yes. The account and its JSON key stay in GCP and in a Cursor secret. **Never commit a key, never paste JSON into the repo, chat, or Beamz.**
+In the same parameter round, suggest creating a **per-env** deploy SA in `nu-art-dev-ops`. First option is yes for **staging**. Prod is a second run of the same script with `env=prod`. The account and its JSON key stay in GCP and in a Cursor secret. **Never commit a key, never paste JSON into the repo, chat, or Beamz.**
 
-Name: `<slug>-staging-deploy@nu-art-dev-ops.iam.gserviceaccount.com`. No Owner, Editor, or prod.
+Name: `<slug>-<env>-deploy@nu-art-dev-ops.iam.gserviceaccount.com`. No Owner or Editor.
 
 Enable on `nu-art-dev-ops`: `cloudbuild.googleapis.com`, `artifactregistry.googleapis.com`, `cloudresourcemanager.googleapis.com`, `firebase.googleapis.com`, `firebasehosting.googleapis.com`, `firebasedatabase.googleapis.com`. The deploy SA lives there, so that project is the Firebase CLI quota project — Hosting 403 SERVICE_DISABLED if those APIs are off. Enable on the staging project: `run`, `firebase`, `firebasehosting`, `firebasedatabase`. Confirm `web-apps` and `hosting-builds` already exist; do not create them with this SA.
 
@@ -223,21 +223,21 @@ On staging: `run.admin` (not `run.developer` — BAI’s service yaml sets `invo
 
 Robots: Cloud Build runtime SA writer on `web-apps`; staging Cloud Run agent reader on `web-apps`.
 
-Run this skill's `create-staging-deploy-sa.sh` from the **product** repo (the script lives next to this SKILL.md, not in the clone):
+Run the clone's `scripts/create-deploy-sa.sh` from the **product** repo (it ships with the sample):
 
 ```bash
-bash ~/.cursor/skills/bootstrap-thunderstorm-project/create-staging-deploy-sa.sh <slug> <staging-project-id>
+bash scripts/create-deploy-sa.sh <slug> <env>
 ```
 
-It writes `$HOME/.config/gcloud/<slug>-staging-deploy.json` and refuses if that path is inside the product worktree. Never `cat` the file. Do **not** copy the script into the new repo — the next skill update would never reach old clones. Put `*-staging-deploy.json` in the product `.gitignore`.
+`<env>` is `staging` or `prod` (a key under backend `unitConfig.envs`, never `local`). It checks gcloud auth, asserts the caller can grant on that env's project + the artifact project, creates `<slug>-<env>-deploy@nu-art-dev-ops`, and prints Cursor secret **`GCP_SA_JSON`** plus a `file://` link to `$HOME/.config/gcloud/<slug>-<env>-deploy.json`. Never `cat` the file. Put `*-*-deploy.json` in the product `.gitignore`.
 
 The sample ships `.cursor/environment.json`, `cloud-install.sh`, and `cloud-start.sh`. **Keep them on clone.** Do not add a Dockerfile.
 
 Install: `cpio`, `rsync`, gcloud (`$HOME/google-cloud-sdk`), `docker.io`, submodule init. **Never** run `build-and-install.sh init` in install — it OOMs the Cloud Build. Agents run BAI when they need it.
 
-Start: `service docker start`, submodule init (`git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive`), ADC from **`<SLUG>_STAGING_DEPLOY_SA_JSON`** (hyphens → underscores, upper case; Identity: `IDENTITY_SYNCER_STAGING_DEPLOY_SA_JSON`). Value is the key file contents, not a path. Do not invent a second secret name. `deploy.sh` reads that env. Local Docker is not required for `deploy.sh`; Cloud Agents still need Docker for `bai -l` / e2e.
+Start: `service docker start`, submodule init (`git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive`), ADC from **`GCP_SA_JSON`**. Value is the key file contents, not a path. Do not invent a second secret name (`<SLUG>_STAGING_DEPLOY_SA_JSON` is wrong). `.cursor/cloud-start.sh` and `deploy.sh` read `GCP_SA_JSON`. Local Docker is not required for `deploy.sh`; Cloud Agents still need Docker for `bai -l` / e2e.
 
-The SA **create** script stays in this skill. Do not copy it into the product.
+The SA **create** script lives in the sample at `scripts/create-deploy-sa.sh`. Keep it on clone.
 
 ## Step 7 — Ports
 

@@ -12,7 +12,7 @@ When `specPath` is empty, write `_docs/specs/product.md` as a pointer to Beamz k
 
 Suggest creating `local`, `staging`, and `prod` in the parameter question. The first option is yes. Propose ids `nu-art-<short>-local|staging|prod`, each at most 30 characters, and show them before creating anything. Org `1056158311235`. Bill staging and prod to `012B92-EB17B2-394827`. Leave local unbilled.
 
-Also suggest a staging-only deploy SA in `nu-art-dev-ops`. Run **this skill's** `create-staging-deploy-sa.sh` from the product root. **Do not copy the script into the product.** The JSON goes under `$HOME/.config/gcloud`. Cloud Agents: keep the sample's `.cursor/cloud-install.sh` / `cloud-start.sh`. Secret is `<SLUG>_STAGING_DEPLOY_SA_JSON` (Identity: `IDENTITY_SYNCER_STAGING_DEPLOY_SA_JSON`). Never BAI init in install. `gcloud builds submit` needs `roles/storage.admin` on `gs://nu-art-dev-ops_cloudbuild` and `roles/serviceusage.serviceUsageConsumer` on `nu-art-dev-ops`. Cloud Build runtime SA is `PROJECT_NUMBER-compute@developer.gserviceaccount.com`.
+Also suggest a per-env deploy SA in `nu-art-dev-ops`. Run the sample's `scripts/create-deploy-sa.sh <slug> <env>` from the product root. The JSON goes under `$HOME/.config/gcloud`. Cloud Agents: keep the sample's `.cursor/cloud-install.sh` / `cloud-start.sh`. Cursor secret is **`GCP_SA_JSON`** (the key file contents). Never BAI init in install. `gcloud builds submit` needs `roles/storage.admin` on `gs://nu-art-dev-ops_cloudbuild` and `roles/serviceusage.serviceUsageConsumer` on `nu-art-dev-ops`. Cloud Build runtime SA is `PROJECT_NUMBER-compute@developer.gserviceaccount.com`.
 
 ## Port map (template baseline N = 8000)
 
